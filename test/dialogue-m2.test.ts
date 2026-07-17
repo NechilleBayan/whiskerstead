@@ -55,18 +55,51 @@ test("every authored line is non-empty, within the char cap, and globally unique
     assert.ok(count >= 4, `${category} has a real pool (saw ${count})`);
     total += count;
   }
-  assert.ok(total >= 400, `content wave landed (${total} lines)`);
+  assert.ok(total >= 900, `content wave landed (${total} lines)`);
   // every ambient category has lines and a positive weight
   for (const c of AMBIENT_CATEGORIES) {
     assert.ok(TONED_LINES[c.id], `lines exist for ambient category ${c.id}`);
     assert.ok(c.weight > 0, `${c.id} has a positive weight`);
   }
-  // every event-driven category has lines too
+  // every event-driven category has lines too (wave-1 + wave-2 migrated)
   for (const id of [
     "repeat_fish", "repeat_chop", "repeat_gather", "dream_report",
     "weather_to_rain", "weather_to_storm", "weather_to_clear",
     "friend_milestone", "crush_milestone", "rival_milestone",
+    ...MIGRATED,
   ]) assert.ok(TONED_LINES[id], `lines exist for event category ${id}`);
+  // migration is COMPLETE: each migrated id lives ONLY in TONED_LINES now, so
+  // selectLine (LINES-first) actually reaches the toned bands (spec guard 3)
+  for (const id of MIGRATED)
+    assert.ok(!(id in LINES) && id in TONED_LINES, `${id} migrated out of LINES into TONED_LINES`);
+  // the terse-crisis + dormant categories stay flat in LINES, untouched
+  for (const id of [...TERSE_FLAT, ...DORMANT])
+    assert.ok(id in LINES && !(id in TONED_LINES), `${id} stays flat in LINES`);
+});
+
+// wave-2 migration cohort (06-dialogue-m2w2-spec)
+const MIGRATED_FULL = [
+  "fish_catch", "fish_miss", "eat_good", "eat_bad", "cook_done", "build",
+  "gossip_open", "argue", "beg", "comfort", "scavenge", "chop",
+  "steal_success", "cookoff", "oust_campaign",
+];
+const MIGRATED_MODERATE = [
+  "beg_refused", "confront_apology", "confront_quit", "confront_defended",
+  "cult_visit", "cult_recruit",
+];
+const MIGRATED = [...MIGRATED_FULL, ...MIGRATED_MODERATE];
+const TERSE_FLAT = ["pond_accident", "steal_caught", "rescue", "recovered"];
+const DORMANT = ["greeting", "sleep", "rain", "storm_fear", "chase"];
+
+test("migrated event categories hit their volume targets", () => {
+  const count = (id: string): number => {
+    let n = 0;
+    for (const tone of TONES)
+      for (const pool of Object.values(TONED_LINES[id]?.[tone] ?? {})) n += pool.length;
+    return n;
+  };
+  for (const id of MIGRATED_FULL) assert.ok(count(id) >= 30, `${id} full-expand >= 30 (saw ${count(id)})`);
+  for (const id of MIGRATED_MODERATE) assert.ok(count(id) >= 18, `${id} moderate >= 18 (saw ${count(id)})`);
 });
 
 test("gates enforce truth: grumbles, weather, sleep, campfire, likes, time", () => {

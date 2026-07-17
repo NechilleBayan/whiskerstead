@@ -1,12 +1,11 @@
 # PROJECT-STATE
 
 ## Current milestone
-**Dialogue M2 wave 1 — fresh content, new-trigger categories** (spec:
-`files/06-dialogue-integration-spec.md`). Wave 1 = 15 categories with live
-triggers (ambient, weather-changed, relationship-milestone, repetition,
-sleep/dream), ~40 lines each, 4 tone bands, locked voice. Builder dispatched
-2026-07-17. Wave 2 (expand existing ~30 event categories to 40 lines) waits
-for wave-1 verification. M0 committed `3e70a4b`, M1 committed `ddacb2c`.
+**Dialogue M3 — TONE_WEIGHTS + priority bias + campfire ambient fix** (spec:
+`files/06-dialogue-integration-spec.md` §4–5). Next after M2 wave 2 landed
+2026-07-18. M0 `3e70a4b`, M1 `ddacb2c`, M2 wave 1 `7845ff7`, M2 wave 2
+`<pending>`. Remaining dialogue arc: M3 (tone/priority), M4 (social depth).
+M5 (seasons/festival/arrivals) stays gated behind its own go-ahead.
 
 ## Task queue
 1. **M0** — context-gated selector plumbing: `src/sim/dialogue/`, side-effect-free
@@ -27,13 +26,25 @@ for wave-1 verification. M0 committed `3e70a4b`, M1 committed `ddacb2c`.
    subscriber + event hookups. ← DONE (reviewed PASS, 44/44 tests; digest
    +7.8% bubbles, ambient silence dominant; four review fixes applied and
    spot-verified: crowd threshold key, philosophical_night split, snow line
-   replaced, tally comment). Committed `<pending>`.
+   replaced, tally comment). Committed `7845ff7`.
    Accepted/deferred from review: voice-drift NITs kept (internet-casual is
    in-register), gates live in content/dialogue/categories.ts (relocate to
    sim/dialogue/gates.ts if they grow logic in wave 2), campfire_talk gate
    almost never passes (cats near fire are mid-perform — needs an ambient
    carve-out; wave 2 / M3 item).
-4. **M2 wave 2** — expand existing ~30 event categories to ~40 lines each.
+4. **M2 wave 2** — migrate 21 event categories from flat `LINES` into toned
+   `TONED_LINES` (~40 lines/full, 24–30/moderate; 754 new lines) so M3 tone
+   weighting reaches the core event bubbles. Selector falls through
+   `LINES`→`TONED_LINES` so `say()` sites are unchanged; behavior code
+   untouched. Terse crisis (pond_accident, steal_caught, rescue, recovered)
+   and dormant (greeting, sleep, rain, storm_fear, chase) stay flat.
+   ← DONE (spec `files/07-dialogue-m2w2-spec.md`; authored + adversarially
+   verified per-category via workflow; reviewed PASS, 45/45 tests, typecheck
+   clean; 3-seed 2-day digest healthy — 222–259 migrated-category bubbles/run,
+   no permanent collapse). Committed `<pending>`.
+   Note: `weather_ambient` (wave 1) has "puddle inventory: rising" — "inventory"
+   is plain stock-taking, not the RPG term; left as-is. Deleting the 5 dormant
+   LINES categories is a later cleanup pass (own go-ahead).
 5. **M3** — TONE_WEIGHTS multipliers + priority bias + campfire ambient fix.
 6. **M4** — social depth (campfire convos, rumors via `heard:` memories,
    reconcile action).
@@ -67,10 +78,9 @@ for wave-1 verification. M0 committed `3e70a4b`, M1 committed `ddacb2c`.
   vacuous — tighten in a future test pass.
 
 ## Last verified state
-- Commit `7d1819c` pushed (cat sprites + walk squish + facing + view latch).
-  Typecheck/build green; browser-verified; 16-test suite green.
-- Commit `3e70a4b` — Dialogue M0 (pure selection plumbing + suppression fixes).
-- Grid map delivered 2026-07-17 (`files/whiskerstead_village_grid_map.png` +
-  `_instructions.md`). Reviewer PASS after fixes; no source touched; anchors
-  re-dumped after `3e70a4b` landed and unchanged by it.
-- Uncommitted: the two grid-map files and this file.
+- Dialogue M0 `3e70a4b`, M1 `ddacb2c`, M2 wave 1 `7845ff7` — all reviewed PASS,
+  committed. Grid map + `7d1819c` sprites earlier, green.
+- M2 wave 2 (`<pending>`): 45/45 headless tests green, typecheck clean, reviewer
+  PASS, 3-seed 2-day digest healthy. Dialogue library now 56 toned categories
+  (~1265 lines) + 9 flat crisis/dormant categories.
+- Uncommitted at handoff: none expected after the M2-wave-2 commit lands.
