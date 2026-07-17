@@ -594,6 +594,14 @@ export class Simulation {
         case "argued":
           say(e.a, "argue");
           break;
+        case "reconciled": {
+          // Spoken by the initiator only (06-dialogue M4 §A). An accepted peace
+          // is a rare beat — forced through the chatter cooldown; a rebuff isn't.
+          const fill = { who: this.byId(e.b)?.identity.name ?? e.b };
+          if (e.outcome === "accepted") say(e.a, "reconcile", { force: true, fill });
+          else say(e.a, "reconcile_rebuffed", { fill });
+          break;
+        }
         case "gossiped":
           say(e.from, "gossip_open", { kind: "gossip", fill: { who: this.byId(e.about)?.identity.name ?? e.about } });
           break;
@@ -725,6 +733,7 @@ export class Simulation {
       if (typeof c.lastAmbientAt !== "number")
         c.lastAmbientAt = world.time - (i / world.cats.length) * DIALOGUE.ambientIntervalMs;
       c.repetition ??= { actionId: "", count: 0 };
+      c.reconcileCooldowns ??= {}; // pre-M4 saves
       const house = world.buildings.find((b) => b.owner === c.id);
       if (house && house.state?.stage == null) house.state = { ...house.state, stage: 2 }; // pre-build-arc saves
     }

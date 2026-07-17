@@ -88,6 +88,9 @@ export interface CatState extends BaseEntity {
   repetition: { actionId: string; count: number };
   /** Bubble duplicate-suppression: line id -> last time used (spec §8). */
   lineHistory: Record<string, number>;
+  /** Reconcile attempt stamps (06-dialogue M4 §A): rival id -> last attempt time.
+   *  One reconcile per rival per game day (RECONCILE.cooldownMs). Serialized. */
+  reconcileCooldowns: Record<string, number>;
   cultRole?: string;
 }
 

@@ -25,6 +25,7 @@ export type GameEvent =
   | { type: "chatted"; a: string; b: string; topic: string }
   | { type: "argued"; a: string; b: string }
   | { type: "befriended"; a: string; b: string }
+  | { type: "reconciled"; a: string; b: string; outcome: "accepted" | "rebuffed" }
   | { type: "gossiped"; from: string; about: string; event: string }
   | { type: "discovered-artifact"; cat: string }
   | { type: "cult-founded"; founder: string }

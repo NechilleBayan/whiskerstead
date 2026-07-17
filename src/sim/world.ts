@@ -75,6 +75,7 @@ export function createWorld(seed = 1337): WorldState {
       lastAmbientAt: -(i / ROSTER.length) * DIALOGUE.ambientIntervalMs,
       repetition: { actionId: "", count: 0 },
       lineHistory: {},
+      reconcileCooldowns: {},
     };
     return cat;
   });

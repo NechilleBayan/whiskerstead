@@ -63,7 +63,7 @@ own go-ahead.
    digest verification and added after — 2 tuning keys + 6-line emit change +
    test split, producer-verified via multi-seed probes + expanded suite 56/56,
    typecheck clean, tone bands balanced, no permanent collapse). Committed
-   `<pending>`.
+   `1aaacb6`.
    Known limit (by design → M4): campfire_talk chatter is sparse (~0–2/3days,
    many seeds 0) because its gate correctly requires a LIT fire + awake company,
    and cats rarely gather+linger at a lit fire yet. Frequency strengthens in M4

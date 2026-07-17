@@ -200,6 +200,28 @@ export const CULT = {
   recruitCooldownMs: DAY_MS, // 1 game day per target
 } as const;
 
+/** Reconcile action — 06-dialogue M4 §A. A cat makes up with a rival: an
+ *  ADDITIVE repair (rule 5 — old argument memories are never scaled or scrubbed).
+ *  Kept modest/occasional; the accept roll is the ONE rng draw per attempt. */
+export const RECONCILE = {
+  cooldownMs: DAY_MS, // one attempt per rival per game day (mirrors CULT.recruitCooldownMs)
+  durationMs: 8_000, // a short sit-down
+  baseAppeal: 0.5, // modest base — reconcile stays an occasional pull, not a dominant one
+  leanGenerous: 1.5, // generous/optimist initiator leans toward making up (multiplier, never a gate)
+  leanProud: 0.6, // a proud initiator reconciles less — floored above 0, never silenced
+  acceptBase: 0.5, // base odds the other cat accepts the peace
+  minAccept: 0.1, // clamp floor — even a deep grudge can thaw, rarely
+  maxAccept: 0.9, // clamp ceiling — reconciliation is never a certainty
+  forgivingBonus: 0.25, // other is generous/optimist → likelier to accept
+  grudgePenalty: 0.35, // scaled by how negatively the OTHER sees the initiator
+  repairUp: 0.3, // initiator's drift toward the other on accept (crosses rival→neutral from a shallow rivalry)
+  repairUpOther: 0.2, // the other's smaller mutual repair
+  memoryCharge: 0.3, // additive positive memory on the initiator
+  memoryChargeOther: 0.25, // additive positive memory on the other
+  rebuffDown: 0.05, // tiny drift down on a rebuff — stays rival, no erasure
+  rebuffMemoryCharge: -0.15, // a sour "not ready" memory on the initiator
+} as const;
+
 /** Near-death floors — spec §9. Condition never falls below this. */
 export const HEALTH = {
   criticalFloor: 0.12,

@@ -8,6 +8,7 @@ import { preferenceFactor } from "../scoring.ts";
 import { choppableTrees } from "../trees.ts";
 import type { Building, CatState, Item, Site, WorldState } from "../types.ts";
 import type { ActionDef } from "./types.ts";
+import { reconcile } from "./reconcile.ts";
 
 // ---------- helpers ----------
 
@@ -1013,4 +1014,5 @@ export const ACTIONS: ActionDef[] = [
   chase,
   comfort,
   scavenge,
+  reconcile,
 ];

@@ -1796,4 +1796,97 @@ export const TONED_LINES: Record<string, Partial<Record<Tone, LineTable>>> = {
       cryptic: ["the shape has been waiting. patiently…"],
     },
   },
+
+  // ---------- reconcile: initiator makes peace with a rival, ACCEPTED
+  // (06-dialogue M4 §A). Sincere making-up register; the dark band is wry, not
+  // grim — a feud is a waste of a short life, not a death sentence. ----------
+  reconcile: {
+    normal: {
+      any: [
+        "hey {who}. can we start over",
+        "i've been meaning to say sorry",
+        "let's not stay mad, {who}",
+        "i miss us being okay",
+        "truce? i even brought flowers",
+        "you and me, {who}. let's fix it",
+        "i don't wanna fight anymore, {who}",
+        "clean slate? please",
+        "no hard feelings, {who}. deal?",
+      ],
+      optimist: ["we're better as friends, {who}"],
+      planner: ["let's talk it through. calmly"],
+    },
+    dry: {
+      any: [
+        "so. grudge forever, or nah",
+        "i'm here to un-hate you, {who}",
+        "this is me being the bigger cat",
+        "peace. and no, i'm not going soft",
+        "consider this me lowering my tail",
+        "fine. i forgive you. mostly",
+      ],
+      cynic: ["against my better judgment, {who}"],
+    },
+    unhinged: {
+      any: [
+        "let's just be okay again, {who}!!",
+        "i came to make PEACE. loudly",
+        "no more feud. hissing is exhausting",
+        "truce or i flop on you, {who}",
+        "{who}!! i surrender the whole grudge!!",
+      ],
+      chaos: ["peace treaty. chaotic. binding"],
+    },
+    dark: {
+      any: [
+        "grudges just rot. let's not, {who}",
+        "short lives. no sense spending one mad",
+        "even the pond lets go. we can too",
+        "the feud outlives us. let it starve",
+      ],
+      cryptic: ["the knot loosens. if you let it"],
+      cynic: ["hating you is a lot of upkeep, {who}"],
+    },
+  },
+
+  // ---------- reconcile_rebuffed: the peace offer is turned down; the rivalry
+  // stands (06-dialogue M4 §A). Stung but not crushed; dark stays wry. ----------
+  reconcile_rebuffed: {
+    normal: {
+      any: [
+        "worth a try, i guess",
+        "okay. maybe not today, {who}",
+        "i tried. that's something",
+        "still mad, huh. fair enough",
+        "i'll leave the door open, {who}",
+      ],
+      optimist: ["next time, maybe, {who}"],
+    },
+    dry: {
+      any: [
+        "cool. rejected. very warm",
+        "well. that went great",
+        "guess the grudge stays, {who}",
+        "noted. still on the outs",
+      ],
+      cynic: ["figured you'd say no, {who}"],
+    },
+    unhinged: {
+      any: [
+        "FINE. keep your feud, {who}",
+        "i offered PEACE and got a hiss",
+        "rejected!! my whiskers are wounded",
+      ],
+      chaos: ["you'll regret spurning my truce!!"],
+    },
+    dark: {
+      any: [
+        "grudge wins this round, {who}",
+        "peace declined. the feud eats on",
+        "well. we take that to the grave",
+      ],
+      cynic: ["figures. warmth's wasted on {who}"],
+      cryptic: ["the knot holds. for now, {who}"],
+    },
+  },
 };
