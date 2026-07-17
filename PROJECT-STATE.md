@@ -1,7 +1,12 @@
 # PROJECT-STATE
 
 ## Current milestone
-**Dialogue M0 — selection plumbing** (spec: `files/06-dialogue-integration-spec.md`, approved 2026-07-17)
+**Dialogue M2 wave 1 — fresh content, new-trigger categories** (spec:
+`files/06-dialogue-integration-spec.md`). Wave 1 = 15 categories with live
+triggers (ambient, weather-changed, relationship-milestone, repetition,
+sleep/dream), ~40 lines each, 4 tone bands, locked voice. Builder dispatched
+2026-07-17. Wave 2 (expand existing ~30 event categories to 40 lines) waits
+for wave-1 verification. M0 committed `3e70a4b`, M1 committed `ddacb2c`.
 
 ## Task queue
 1. **M0** — context-gated selector plumbing: `src/sim/dialogue/`, side-effect-free
@@ -15,14 +20,23 @@
 2. **M1** — state gaps: `weather-changed` + `relationship-milestone` events, derived
    context queries, ambient emitter (`lastAmbientAt`, serialized), repetition
    streak, renderer bubble wrap. ← DONE (reviewed PASS, 36/36 tests; save/load
-   determinism of the ambient window verified empirically). Uncommitted.
+   determinism of the ambient window verified empirically). Committed `ddacb2c`.
    M2 author note: `nearbyCats()` includes collapsed cats (perception idiom) —
    casual-chatter categories should add their own filter if needed.
-3. **M2+** — fresh content waves: ~40 lines/category, locked voice, 4 tone bands
-   incl. full dark (user-approved override), strongest categories first.
-4. **M3** — ambient speech live + TONE_WEIGHTS + priority bias.
-5. **M4** — social depth (campfire convos, rumors via `heard:` memories,
-   relationship milestones, reconcile action).
+3. **M2 wave 1** — 509 fresh lines, 34 gate-exact (sub)categories, ambient
+   subscriber + event hookups. ← DONE (reviewed PASS, 44/44 tests; digest
+   +7.8% bubbles, ambient silence dominant; four review fixes applied and
+   spot-verified: crowd threshold key, philosophical_night split, snow line
+   replaced, tally comment). Committed `<pending>`.
+   Accepted/deferred from review: voice-drift NITs kept (internet-casual is
+   in-register), gates live in content/dialogue/categories.ts (relocate to
+   sim/dialogue/gates.ts if they grow logic in wave 2), campfire_talk gate
+   almost never passes (cats near fire are mid-perform — needs an ambient
+   carve-out; wave 2 / M3 item).
+4. **M2 wave 2** — expand existing ~30 event categories to ~40 lines each.
+5. **M3** — TONE_WEIGHTS multipliers + priority bias + campfire ambient fix.
+6. **M4** — social depth (campfire convos, rumors via `heard:` memories,
+   reconcile action).
 
 ## Reference assets
 - `files/whiskerstead_village_grid_map.png` + `_instructions.md` — positioning

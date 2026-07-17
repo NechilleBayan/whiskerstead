@@ -66,7 +66,9 @@ test("ambient-window is suppressed while grabbed, collapsed, or mid-perform", ()
   g.grabbed = true;
   c.stage = "collapsed";
   c.action = undefined;
-  p.action = { id: "sleep", phase: "perform", startedAt: sim.world.time, duration: 1e12 };
+  // M2 carved out a sleep-perform exception (sleep_talk windows), so the
+  // mid-perform suppression case must use a non-sleep action.
+  p.action = { id: "fish", phase: "perform", startedAt: sim.world.time, duration: 1e12 };
   for (const cat of [g, c, p]) cat.lastAmbientAt = -1e9; // long overdue
   for (let t = 0; t < 2000; t += 200) sim.tick(200);
   assert.ok(!fired.includes(g.id), "grabbed cat gets no window");

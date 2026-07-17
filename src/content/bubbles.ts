@@ -7,7 +7,7 @@ import { selectLine } from "../sim/dialogue/select.ts";
 import type { Rng } from "../sim/rng.ts";
 import type { CatState, PersonalityId } from "../sim/types.ts";
 
-type LineTable = Partial<Record<PersonalityId | "any", string[]>>;
+export type LineTable = Partial<Record<PersonalityId | "any", string[]>>;
 
 export const LINES: Record<string, LineTable> = {
   greeting: {

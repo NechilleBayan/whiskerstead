@@ -5,7 +5,9 @@
 import { ROLL_TEMPERATURE, WALK_SPEED, HEALTH, CONDITION, BUBBLE, DIALOGUE, OUST, LINE_SUPPRESS_MS, LINE_HISTORY_CAP, NEVER_MS } from "../config/tuning.ts";
 import { ACTIONS, qtier } from "./actions/index.ts";
 import type { ActionCtx, ActionDef } from "./actions/types.ts";
+import { AMBIENT_CATEGORIES } from "../content/dialogue/categories.ts";
 import { EventBus, type GameEvent } from "./events.ts";
+import { nearbyCats } from "./dialogue/context.ts";
 import { selectLine } from "./dialogue/select.ts";
 import { clamp01, decayNeeds, updateHealthStage } from "./needs.ts";
 import { perceive, distance } from "./perception.ts";
@@ -75,10 +77,14 @@ export class Simulation {
 
     // Ambient speech window (06-dialogue M1): deliberately NOT an ActionDef —
     // it must never compete with eating/sleeping in the decision roll. Fires
-    // only in idle-ish moments (idle or goto; grabbed/collapsed return above).
-    // The timer resets whether or not the M2/M3 subscriber speaks — silence
-    // is the common outcome and must not pile windows up.
-    if (cat.action?.phase !== "perform" && this.world.time - cat.lastAmbientAt >= DIALOGUE.ambientIntervalMs) {
+    // only in idle-ish moments (idle or goto; grabbed/collapsed return above)
+    // — plus DURING sleep's perform phase specifically, whose windows can
+    // only mumble sleep_talk (M2). The timer resets whether or not the
+    // subscriber speaks — silence is the common outcome and must not pile
+    // windows up.
+    const performing = cat.action?.phase === "perform";
+    const sleepPerform = performing && cat.action!.id === "sleep";
+    if ((!performing || sleepPerform) && this.world.time - cat.lastAmbientAt >= DIALOGUE.ambientIntervalMs) {
       // jitter the NEXT interval so cats drift out of sync (seeded rng only)
       cat.lastAmbientAt = this.world.time + this.rng.range(-DIALOGUE.ambientJitterMs, DIALOGUE.ambientJitterMs);
       this.bus.emit({ type: "ambient-window", cat: cat.id });
@@ -107,8 +113,11 @@ export class Simulation {
         const ctx = this.ctx(cat, act);
         act.onComplete(ctx);
         // Repetition tally (06-dialogue M1): streak of identical completed
-        // actions; M2 "again?" categories gate on it. Set before the event so
-        // subscribers see the updated streak.
+        // actions; M2 "again?" categories gate on it. Ordering: the action's
+        // own onComplete events (fished/chopped/gathered) fired ABOVE, before
+        // this tally — their handlers add this completion themselves
+        // (repetitionSay's count + 1). Only action-completed, emitted below,
+        // sees the updated streak.
         cat.repetition =
           cat.repetition.actionId === act.id
             ? { actionId: act.id, count: cat.repetition.count + 1 }
@@ -452,7 +461,9 @@ export class Simulation {
     // said too recently downgrades to a thought icon — intent stays legible.
     // ONE record per spoken line, committed only now that the bubble really
     // shows (06-dialogue §3 bugs 2+3) — selection itself is side-effect-free.
-    if ((kind === "speech" || kind === "gossip") && text) {
+    // M2 ambient lines arrive as kind "thought" WITH a suppress key — they
+    // commit history too, so ambient musings honor the same freshness window.
+    if ((kind === "speech" || kind === "gossip" || (kind === "thought" && suppressKey)) && text) {
       const k = suppressKey ?? `spoke:${text}`; // spoke: = freeform action-bubble text
       if (now - (cat.lineHistory[k] ?? NEVER_MS) < LINE_SUPPRESS_MS) {
         kind = "thought";
@@ -499,6 +510,28 @@ export class Simulation {
       }
     });
 
+    // Ambient speech (06-dialogue M2): a window MAY become a thought — the
+    // chance roll comes first, so most windows pass in silence. Eligible =
+    // gate-passing categories; one is chosen by weighted random (roll, don't
+    // max), then the toned pool supplies the line. A sleeping cat's only
+    // eligible category is sleep_talk, at its own lower chance.
+    this.bus.on("ambient-window", (e) => {
+      if (e.type !== "ambient-window") return;
+      const cat = this.byId(e.cat);
+      if (!cat) return;
+      const sleeping = cat.action?.id === "sleep" && cat.action.phase === "perform";
+      if (!this.rng.chance(sleeping ? DIALOGUE.sleepTalkChance : DIALOGUE.ambientSpeakChance)) return;
+      const eligible = AMBIENT_CATEGORIES.filter(
+        (c) => (sleeping ? c.id === "sleep_talk" : c.id !== "sleep_talk") && c.gate(cat, this.world),
+      );
+      if (eligible.length === 0) return;
+      const category = eligible[this.rng.weightedIndex(eligible.map((c) => c.weight))];
+      const others = nearbyCats(cat, this.world, DIALOGUE.nearRadiusU).filter((c) => c.stage !== "collapsed");
+      const fill = others.length > 0 ? { who: others[0].identity.name } : undefined;
+      const pick = selectLine(cat, category.id, this.world.time, this.rng, fill);
+      if (pick) this.speak(cat, pick.text, "thought", undefined, false, pick.key);
+    });
+
     // Narration layer: notable events become personality-flavored bubbles.
     // Priority per spec §8: rare events force through the chatter cooldown.
     this.bus.on("*", (e) => {
@@ -508,9 +541,23 @@ export class Simulation {
         const pick = selectLine(cat, category, this.world.time, this.rng, opts?.fill);
         if (pick) this.speak(cat, pick.text, opts?.kind ?? "speech", undefined, opts?.force ?? false, pick.key);
       };
+      // Repetition flavor (06-dialogue M2): when a work streak qualifies, a
+      // small chance swaps the usual line for an "again?" one — replacement,
+      // not addition, so the base catch/miss lines aren't drowned. Work
+      // events fire from onComplete, BEFORE the streak tally updates — count
+      // this completion on top of the stored streak.
+      const repetitionSay = (catId: string, actionId: string, category: string): boolean => {
+        const cat = this.byId(catId);
+        if (!cat) return false;
+        const streak = cat.repetition.actionId === actionId ? cat.repetition.count + 1 : 1;
+        if (streak < DIALOGUE.repetitionStreak || !this.rng.chance(DIALOGUE.repetitionChance)) return false;
+        say(catId, category);
+        return true;
+      };
       switch (e.type) {
         case "fished":
-          say(e.cat, e.result === "catch" ? "fish_catch" : "fish_miss");
+          if (!repetitionSay(e.cat, "fish", "repeat_fish"))
+            say(e.cat, e.result === "catch" ? "fish_catch" : "fish_miss");
           break;
         case "ate":
           if (e.quality === "bad" || e.quality === "awful") say(e.cat, "eat_bad");
@@ -565,8 +612,43 @@ export class Simulation {
           say(e.cat, "scavenge");
           break;
         case "chopped":
-          say(e.cat, "chop");
+          if (!repetitionSay(e.cat, "chop", "repeat_chop")) say(e.cat, "chop");
           break;
+        case "gathered":
+          repetitionSay(e.cat, "gather", "repeat_gather"); // no base gather line to fall back on
+          break;
+        case "action-completed":
+          // Waking words (06-dialogue M2): a modest chance of a dream report
+          // right as a sleep chunk ends — waking is usually quiet.
+          if (e.action === "sleep" && this.rng.chance(DIALOGUE.dreamChance)) say(e.cat, "dream_report");
+          break;
+        case "weather-changed": {
+          // A change gets a few scattered reactions, never a village chorus:
+          // awake, non-collapsed cats roll individually up to the cap.
+          const category =
+            e.to === "rain" ? "weather_to_rain" : e.to === "storm" ? "weather_to_storm" : "weather_to_clear";
+          let quota: number = DIALOGUE.weatherReactMax;
+          for (const c of this.world.cats) {
+            if (quota === 0) break;
+            if (c.grabbed || c.stage === "collapsed") continue;
+            if (c.action?.id === "sleep" && c.action.phase === "perform") continue; // asleep — missed it
+            if (!this.rng.chance(DIALOGUE.weatherReactChance)) continue;
+            quota--;
+            say(c.id, category);
+          }
+          break;
+        }
+        case "relationship-milestone": {
+          // Spoken by cat a, forced through the chatter cooldown — band
+          // crossings are rare beats and must land (06-dialogue M2). Only
+          // upward crossings get friend/crush lines; any drop to rival bites.
+          const fill = { who: this.byId(e.b)?.identity.name ?? e.b };
+          if (e.to === "crush") say(e.a, "crush_milestone", { force: true, fill });
+          else if (e.to === "friend" && (e.from === "neutral" || e.from === "rival"))
+            say(e.a, "friend_milestone", { force: true, fill });
+          else if (e.to === "rival") say(e.a, "rival_milestone", { force: true, fill });
+          break;
+        }
       }
     });
   }

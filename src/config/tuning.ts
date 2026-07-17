@@ -52,6 +52,9 @@ export const BUBBLE = {
   maxWidthU: 160, // text wider than this wraps
   maxLines: 3, // wrapped text truncates with an ellipsis past this
   lineHeightU: 12, // vertical advance per extra wrapped line
+  /** Hard authoring cap on line length (chars) — 06-dialogue M2. The line
+   *  audit in test/dialogue-m2.test.ts fails any authored line over this. */
+  maxChars: 64,
 } as const;
 
 /** Ambient speech windows (06-dialogue M1). One game day = 60 real minutes,
@@ -62,7 +65,69 @@ export const BUBBLE = {
 export const DIALOGUE = {
   ambientIntervalMs: 150_000,
   ambientJitterMs: 45_000,
+  /** M2: chance an ambient window produces a thought at all. Silence stays the
+   *  common outcome — ~24 windows/cat/day at best, so ~1 in 3 keeps ambient
+   *  speech occasional without flooding the narration bubbles. */
+  ambientSpeakChance: 0.35,
+  /** Sleeping cats mumble much less often than awake cats muse — a sleep chunk
+   *  usually catches at most one window, so this is roughly per-nap odds. */
+  sleepTalkChance: 0.15,
+  /** Chance of a dream report right after a sleep chunk completes — modest, so
+   *  waking is usually quiet and dreams stay a treat. */
+  dreamChance: 0.2,
+  /** Same-action completions in a row before "again?" lines unlock. */
+  repetitionStreak: 3,
+  /** When the streak qualifies, chance the repetition line REPLACES the usual
+   *  catch/chop/gather line — replacement keeps the base lines undrowned. */
+  repetitionChance: 0.25,
+  /** Per-cat chance to react to a weather change, capped at weatherReactMax
+   *  speakers, so a change gets a few scattered reactions and never a chorus. */
+  weatherReactChance: 0.6,
+  weatherReactMax: 3,
+  /** "Near" radius (world units) for ambient gate queries: campfire circle,
+   *  library shelf-distance, nearby-company checks. */
+  nearRadiusU: 90,
+  /** Awake company within nearRadiusU that counts as a "crowd" for the
+   *  crowd-hater grumble gate. */
+  crowdMin: 2,
+  /** Need level below which grumble lines unlock for energy/social/comfort/
+   *  curiosity. Hunger reuses THEFT.begBelow — the same "strong hunger" band
+   *  that drives begging, so a fed cat can never grumble hunger. */
+  grumbleBelow: 0.35,
+  /** Minimum absolute memory charge before memory-musing lines unlock. */
+  memoryChargeMin: 0.35,
 } as const;
+
+/** Relative weights for the ambient category roll (06-dialogue M2): among the
+ *  categories whose gates pass, one is picked by weighted random — roll, don't
+ *  max. Grumbles and campfire talk lead; time/filler flavor trails. */
+export const AMBIENT_WEIGHTS: Record<string, number> = {
+  idle_thought: 1.0,
+  philosophical: 0.7,
+  philosophical_night: 0.7,
+  nonsense: 0.8,
+  like_rain: 0.9,
+  dislike_rain: 0.9,
+  like_library: 0.9,
+  like_pond: 0.9,
+  like_fire: 0.9,
+  dislike_crowds: 0.9,
+  like_solitude: 0.9,
+  time_dawn: 0.6,
+  time_morning: 0.6,
+  time_afternoon: 0.6,
+  time_sunset: 0.6,
+  time_night: 0.6,
+  weather_ambient: 1.0,
+  memory_musing: 0.7,
+  need_hunger: 1.4,
+  need_energy: 1.4,
+  need_social: 1.2,
+  need_comfort: 1.2,
+  need_curiosity: 1.2,
+  campfire_talk: 1.6,
+  sleep_talk: 1.0, // moot in practice — the only eligible category mid-sleep
+};
 
 /** Action durations (ms) — pulled straight from the systems spec. */
 export const ACTION_MS = {

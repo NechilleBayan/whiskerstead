@@ -7,6 +7,7 @@
 
 import { LINE_SUPPRESS_MS, NEVER_MS } from "../../config/tuning.ts";
 import { LINES } from "../../content/bubbles.ts";
+import { TONED_LINES, TONES } from "../../content/dialogue/lines.ts";
 import type { Rng } from "../rng.ts";
 import type { CatState } from "../types.ts";
 
@@ -32,10 +33,21 @@ export function selectLine(
   rng: Rng,
   fill?: Record<string, string>,
 ): LinePick | undefined {
+  // candidates: personality pool merged with `any` — a merge, never a gate.
+  // Legacy LINES resolves first; otherwise the M2 toned tables, flattened
+  // across tone bands in a fixed order (tone weighting is M3).
+  const pool: string[] = [];
   const table = LINES[category];
-  if (!table) return undefined;
-  // candidates: personality pool merged with `any` — a merge, never a gate
-  const pool = [...(table[cat.identity.personality] ?? []), ...(table.any ?? [])];
+  if (table) {
+    pool.push(...(table[cat.identity.personality] ?? []), ...(table.any ?? []));
+  } else {
+    const toned = TONED_LINES[category];
+    if (!toned) return undefined;
+    for (const tone of TONES) {
+      const t = toned[tone];
+      if (t) pool.push(...(t[cat.identity.personality] ?? []), ...(t.any ?? []));
+    }
+  }
   // filter: freshness against the cat's committed history
   const fresh = pool.filter((l) => now - (cat.lineHistory[lineKey(category, l)] ?? NEVER_MS) >= LINE_SUPPRESS_MS);
   if (fresh.length === 0) return undefined;
