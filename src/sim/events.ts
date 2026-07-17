@@ -27,6 +27,7 @@ export type GameEvent =
   | { type: "befriended"; a: string; b: string }
   | { type: "reconciled"; a: string; b: string; outcome: "accepted" | "rebuffed" }
   | { type: "gossiped"; from: string; about: string; event: string }
+  | { type: "rumor-shared"; cat: string; about: string; charge: "good" | "bad" }
   | { type: "discovered-artifact"; cat: string }
   | { type: "cult-founded"; founder: string }
   | { type: "recruited"; founder: string; target: string; outcome: string }

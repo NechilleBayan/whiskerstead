@@ -3,7 +3,7 @@
 // The full DialogueContext snapshot shape lands with the gates (M2/M3),
 // not here — these are the individual questions those gates will ask.
 
-import { SOUP, TREES } from "../../config/tuning.ts";
+import { RUMOR, SOUP, TREES } from "../../config/tuning.ts";
 import { distance } from "../perception.ts";
 import type { CatState, WorldState } from "../types.ts";
 
@@ -44,4 +44,27 @@ export function nearbyCats(cat: CatState, world: WorldState, radius: number): Ca
 export function workElapsedMs(cat: CatState, now: number): number | undefined {
   if (cat.action?.phase !== "perform") return undefined;
   return now - cat.action.startedAt;
+}
+
+/** A resurfaceable rumor (06-dialogue M4 §B): the first `heard:` memory (gossip's
+ *  diluted secondhand opinion — the ONLY source of that prefix) whose charge
+ *  matches `sign`, clears RUMOR.chargeMin, names a still-LIVE cat, and is off its
+ *  per-subject rumor cooldown. PURE — no rng, no mutation; the ambient subscriber
+ *  owns the stamp + rumor-shared emit. Returns undefined when nothing qualifies,
+ *  so the sim goes SILENT rather than fabricating a rumor. */
+export function pickHeardRumor(
+  cat: CatState,
+  world: WorldState,
+  sign: number,
+): { subjectId: string; subjectName: string } | undefined {
+  for (const m of cat.memory) {
+    if (!m.event.startsWith("heard:")) continue;
+    if (Math.sign(m.charge) !== sign) continue;
+    if (Math.abs(m.charge) < RUMOR.chargeMin) continue;
+    const subject = world.cats.find((c) => c.id === m.subject);
+    if (!subject) continue; // subject left the world → no rumor (no fabrication)
+    if (world.time - (cat.rumorCooldowns[m.subject] ?? -Infinity) < RUMOR.cooldownMs) continue;
+    return { subjectId: subject.id, subjectName: subject.identity.name };
+  }
+  return undefined;
 }

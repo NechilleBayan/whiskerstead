@@ -7,7 +7,7 @@ import { ACTIONS, qtier } from "./actions/index.ts";
 import type { ActionCtx, ActionDef } from "./actions/types.ts";
 import { AMBIENT_CATEGORIES } from "../content/dialogue/categories.ts";
 import { EventBus, type GameEvent } from "./events.ts";
-import { nearbyCats } from "./dialogue/context.ts";
+import { nearbyCats, pickHeardRumor } from "./dialogue/context.ts";
 import { selectLine } from "./dialogue/select.ts";
 import { clamp01, decayNeeds, updateHealthStage } from "./needs.ts";
 import { perceive, distance } from "./perception.ts";
@@ -461,10 +461,10 @@ export class Simulation {
     icon?: string,
     force = false,
     suppressKey?: string,
-  ): void {
+  ): boolean {
     const now = this.world.time;
-    if (!force && kind !== "reaction" && now - cat.lastBubbleAt < BUBBLE.perCatCooldownMs) return;
-    if (!force && this.world.bubbles.length >= BUBBLE.maxOnScreen && kind === "thought") return;
+    if (!force && kind !== "reaction" && now - cat.lastBubbleAt < BUBBLE.perCatCooldownMs) return false;
+    if (!force && this.world.bubbles.length >= BUBBLE.maxOnScreen && kind === "thought") return false;
     // Duplicate-line suppression across several game days (spec §8): a line
     // said too recently downgrades to a thought icon — intent stays legible.
     // ONE record per spoken line, committed only now that the bubble really
@@ -489,6 +489,7 @@ export class Simulation {
     this.world.bubbles.push({ cat: cat.id, text: text || (icon ? `[${icon}]` : "…"), kind, bornAt: now, ttl });
     if (this.world.bubbles.length > BUBBLE.queueCap) this.world.bubbles.shift();
     this.bus.emit({ type: "bubble", cat: cat.id, text: text || icon || "", kind });
+    return true;
   }
 
   private expireBubbles(): void {
@@ -539,10 +540,32 @@ export class Simulation {
       );
       if (eligible.length === 0) return;
       const category = eligible[this.rng.weightedIndex(eligible.map((c) => c.weight))];
-      const others = nearbyCats(cat, this.world, DIALOGUE.nearRadiusU).filter((c) => c.stage !== "collapsed");
-      const fill = others.length > 0 ? { who: others[0].identity.name } : undefined;
+      // Rumor categories (M4 §B) fill {who} from the actually-held `heard:` memory
+      // — never a nearby cat — and go SILENT if none qualifies, so the sim never
+      // fabricates a rumor. The generic path fills from nearby company as before.
+      let fill: Record<string, string> | undefined;
+      let rumor: { subjectId: string; subjectName: string } | undefined;
+      if (category.id === "rumor_good" || category.id === "rumor_bad") {
+        rumor = pickHeardRumor(cat, this.world, category.id === "rumor_good" ? 1 : -1);
+        if (!rumor) return; // no really-held rumor → silence (no fabrication)
+        fill = { who: rumor.subjectName };
+      } else {
+        const others = nearbyCats(cat, this.world, DIALOGUE.nearRadiusU).filter((c) => c.stage !== "collapsed");
+        fill = others.length > 0 ? { who: others[0].identity.name } : undefined;
+      }
       const pick = selectLine(cat, category.id, this.world.time, this.rng, fill);
-      if (pick) this.speak(cat, pick.text, "thought", undefined, false, pick.key);
+      if (!pick) return;
+      const spoke = this.speak(cat, pick.text, "thought", undefined, false, pick.key);
+      // Stamp + emit ONLY when a bubble truly showed (mirrors speak's own commit).
+      if (spoke && rumor) {
+        cat.rumorCooldowns[rumor.subjectId] = this.world.time;
+        this.bus.emit({
+          type: "rumor-shared",
+          cat: cat.id,
+          about: rumor.subjectId,
+          charge: category.id === "rumor_good" ? "good" : "bad",
+        });
+      }
     });
 
     // Narration layer: notable events become personality-flavored bubbles.
@@ -734,6 +757,7 @@ export class Simulation {
         c.lastAmbientAt = world.time - (i / world.cats.length) * DIALOGUE.ambientIntervalMs;
       c.repetition ??= { actionId: "", count: 0 };
       c.reconcileCooldowns ??= {}; // pre-M4 saves
+      c.rumorCooldowns ??= {}; // pre-M4-§B saves
       const house = world.buildings.find((b) => b.owner === c.id);
       if (house && house.state?.stage == null) house.state = { ...house.state, stage: 2 }; // pre-build-arc saves
     }

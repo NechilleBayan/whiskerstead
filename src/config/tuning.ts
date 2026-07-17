@@ -148,6 +148,10 @@ export const AMBIENT_WEIGHTS: Record<string, number> = {
   need_curiosity: 1.2,
   campfire_talk: 1.6,
   sleep_talk: 1.0, // moot in practice — the only eligible category mid-sleep
+  // rumors (M4 §B): a resurfaced heard: memory, valence-split. Mid pack — they
+  // only ever roll when a real heard: memory is held, so they stay occasional.
+  rumor_good: 0.9,
+  rumor_bad: 0.9,
 };
 
 /** Per-personality tone-band lean (06-dialogue M3): multipliers over the four
@@ -220,6 +224,18 @@ export const RECONCILE = {
   memoryChargeOther: 0.25, // additive positive memory on the other
   rebuffDown: 0.05, // tiny drift down on a rebuff — stays rival, no erasure
   rebuffMemoryCharge: -0.15, // a sour "not ready" memory on the initiator
+} as const;
+
+/** Rumors from `heard:` memories — 06-dialogue M4 §B. A cat later re-voices a
+ *  secondhand opinion it absorbed from gossip (a `heard:` memory), valence-split
+ *  into the rumor_good/rumor_bad ambient categories. chargeMin sits at the very
+ *  floor a `heard:` memory can carry: gossip writes charge×0.4 and only fires on
+ *  a memory with |charge| ≥ 0.2, so the faintest heard rumor is 0.2×0.4 = 0.08.
+ *  A HIGHER floor would silence ALL rumors — keep it here so real rumors surface.
+ *  cooldownMs is one game day per subject (mirrors CULT/RECONCILE cooldowns). */
+export const RUMOR = {
+  chargeMin: 0.08,
+  cooldownMs: DAY_MS,
 } as const;
 
 /** Near-death floors — spec §9. Condition never falls below this. */

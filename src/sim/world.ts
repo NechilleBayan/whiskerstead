@@ -76,6 +76,7 @@ export function createWorld(seed = 1337): WorldState {
       repetition: { actionId: "", count: 0 },
       lineHistory: {},
       reconcileCooldowns: {},
+      rumorCooldowns: {},
     };
     return cat;
   });

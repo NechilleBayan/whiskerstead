@@ -1849,6 +1849,101 @@ export const TONED_LINES: Record<string, Partial<Record<Tone, LineTable>>> = {
     },
   },
 
+  // ---------- rumor_good: a cat re-voices a POSITIVE `heard:` memory later
+  // (06-dialogue M4 §B). It conveys only "there's warm talk about {who}" — never
+  // the raw event; the hearer doesn't know the specifics, just the good buzz.
+  // Dark band stays wry (good word is fleeting), not grim. ----------
+  rumor_good: {
+    normal: {
+      any: [
+        "word is {who}'s a good one",
+        "folks speak well of {who} lately",
+        "heard {who}'s been kind to everyone",
+        "nice things going round about {who}",
+        "the fireside's fond of {who} these days",
+        "{who}'s name comes up warm",
+        "they say {who}'s alright, and i buy it",
+      ],
+      optimist: ["good buzz about {who}. love that"],
+      planner: ["noting it: {who}'s well regarded"],
+    },
+    dry: {
+      any: [
+        "so {who}'s popular now. huh",
+        "the village approves of {who}, seems like",
+        "word on the pond: {who}'s decent",
+        "{who}'s getting good press. sure",
+        "everyone's charmed by {who}. noted",
+      ],
+      cynic: ["nobody's got dirt on {who}. suspicious"],
+    },
+    unhinged: {
+      any: [
+        "the whole village is BUZZING about {who}",
+        "{who}?? beloved, apparently!!",
+        "word says {who} is GREAT and i AGREE",
+        "the gossip crowned {who} tonight!!",
+      ],
+      chaos: ["spreading the GOOD word about {who}"],
+    },
+    dark: {
+      any: [
+        "kind words for {who}. rare. hoard them",
+        "good talk fades. enjoy {who}'s while it's warm",
+        "even the grove speaks well of {who}",
+      ],
+      cryptic: ["the whispers favor {who}. for now"],
+      cynic: ["praise is cheap, but {who} earned this batch"],
+    },
+  },
+
+  // ---------- rumor_bad: a cat re-voices a NEGATIVE `heard:` memory later
+  // (06-dialogue M4 §B). It conveys only "there's sour talk about {who}" — never
+  // the raw event; secondhand, so the specifics stay vague. Dark band wry. ------
+  rumor_bad: {
+    normal: {
+      any: [
+        "word is {who}'s been trouble",
+        "folks are talking about {who}. not warmly",
+        "heard {who}'s in the doghouse",
+        "the fireside's got notes on {who}",
+        "{who}'s name keeps coming up sour",
+        "they say {who} crossed somebody",
+        "there's grumbling about {who} going round",
+      ],
+      optimist: ["hope the talk about {who} isn't true"],
+      planner: ["flagging it: {who}'s got bad word out"],
+    },
+    dry: {
+      any: [
+        "so {who}'s the talk of the pond. not good",
+        "the village has opinions on {who}. all bad",
+        "word says {who} messed up. shocking",
+        "heard {who}'s on everyone's list now",
+        "{who}'s getting dragged fireside. anyway",
+      ],
+      cynic: ["figures the whispers found {who}"],
+    },
+    unhinged: {
+      any: [
+        "the WHOLE village is whispering about {who}",
+        "{who}?? oh they are in TROUBLE",
+        "word is {who} did something. big something",
+        "the gossip pile is ALL {who} tonight",
+      ],
+      chaos: ["ooh the {who} rumors are SPICY"],
+    },
+    dark: {
+      any: [
+        "bad word sticks longer than good. sorry {who}",
+        "the murmurs found {who}. they always do",
+        "{who}'s in the talk now. we all get a turn",
+      ],
+      cryptic: ["the whispers circle {who} lately"],
+      cynic: ["rumor eats {who} today. someone else tomorrow"],
+    },
+  },
+
   // ---------- reconcile_rebuffed: the peace offer is turned down; the rivalry
   // stands (06-dialogue M4 §A). Stung but not crushed; dark stays wry. ----------
   reconcile_rebuffed: {

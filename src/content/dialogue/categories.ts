@@ -7,7 +7,7 @@
 // personality is a flavor pool inside the line tables, never a gate.
 
 import { AMBIENT_WEIGHTS, DIALOGUE, THEFT } from "../../config/tuning.ts";
-import { nearbyCats } from "../../sim/dialogue/context.ts";
+import { nearbyCats, pickHeardRumor } from "../../sim/dialogue/context.ts";
 import { distance } from "../../sim/perception.ts";
 import type { Building, CatState, WorldState } from "../../sim/types.ts";
 
@@ -66,6 +66,11 @@ export const GATES: Record<string, AmbientGate> = {
   need_social: (cat) => cat.needs.social < DIALOGUE.grumbleBelow,
   need_comfort: (cat) => cat.needs.comfort < DIALOGUE.grumbleBelow,
   need_curiosity: (cat) => cat.needs.curiosity < DIALOGUE.grumbleBelow,
+  // rumors (M4 §B): a cat re-voices a still-held `heard:` memory about a LIVE
+  // cat, valence-split by charge sign. PURE truth check — the gate only passes
+  // when pickHeardRumor finds a really-held rumor, so it is never fabricated.
+  rumor_good: (cat, world) => !!pickHeardRumor(cat, world, +1),
+  rumor_bad: (cat, world) => !!pickHeardRumor(cat, world, -1),
   campfire_talk: (cat, world) => litFireNearby(cat, world) && company(cat, world).length >= 1,
   // mid-sleep only; the ambient subscriber additionally restricts a sleeping
   // cat's roll to this single category (at its own lower chance)

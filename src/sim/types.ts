@@ -91,6 +91,10 @@ export interface CatState extends BaseEntity {
   /** Reconcile attempt stamps (06-dialogue M4 §A): rival id -> last attempt time.
    *  One reconcile per rival per game day (RECONCILE.cooldownMs). Serialized. */
   reconcileCooldowns: Record<string, number>;
+  /** Rumor re-voicing stamps (06-dialogue M4 §B): subject id -> last time this
+   *  cat aired a rumor about them. One rumor per subject per game day
+   *  (RUMOR.cooldownMs). Serialized. */
+  rumorCooldowns: Record<string, number>;
   cultRole?: string;
 }
 
