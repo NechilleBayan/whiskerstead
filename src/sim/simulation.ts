@@ -2,13 +2,14 @@
 // §Architecture 1). Two clocks (spec §2): a continuous frame update and a
 // decision tick fired on idle / action-complete.
 
-import { ROLL_TEMPERATURE, WALK_SPEED, HEALTH, CONDITION, BUBBLE, OUST, LINE_SUPPRESS_MS, LINE_HISTORY_CAP, NEVER_MS } from "../config/tuning.ts";
+import { ROLL_TEMPERATURE, WALK_SPEED, HEALTH, CONDITION, BUBBLE, DIALOGUE, OUST, LINE_SUPPRESS_MS, LINE_HISTORY_CAP, NEVER_MS } from "../config/tuning.ts";
 import { ACTIONS, qtier } from "./actions/index.ts";
 import type { ActionCtx, ActionDef } from "./actions/types.ts";
 import { EventBus, type GameEvent } from "./events.ts";
 import { selectLine } from "./dialogue/select.ts";
 import { clamp01, decayNeeds, updateHealthStage } from "./needs.ts";
 import { perceive, distance } from "./perception.ts";
+import { nudgeRel } from "./relationships.ts";
 import { Rng } from "./rng.ts";
 import { scoreCandidate, type Candidate } from "./scoring.ts";
 import { phaseAt } from "./time.ts";
@@ -72,6 +73,17 @@ export class Simulation {
 
     if (cat.stage === "collapsed") return; // waits for rescue
 
+    // Ambient speech window (06-dialogue M1): deliberately NOT an ActionDef —
+    // it must never compete with eating/sleeping in the decision roll. Fires
+    // only in idle-ish moments (idle or goto; grabbed/collapsed return above).
+    // The timer resets whether or not the M2/M3 subscriber speaks — silence
+    // is the common outcome and must not pile windows up.
+    if (cat.action?.phase !== "perform" && this.world.time - cat.lastAmbientAt >= DIALOGUE.ambientIntervalMs) {
+      // jitter the NEXT interval so cats drift out of sync (seeded rng only)
+      cat.lastAmbientAt = this.world.time + this.rng.range(-DIALOGUE.ambientJitterMs, DIALOGUE.ambientJitterMs);
+      this.bus.emit({ type: "ambient-window", cat: cat.id });
+    }
+
     if (!cat.action) {
       this.decide(cat);
       return;
@@ -94,6 +106,13 @@ export class Simulation {
       if (this.world.time - cat.action.startedAt >= cat.action.duration * slow) {
         const ctx = this.ctx(cat, act);
         act.onComplete(ctx);
+        // Repetition tally (06-dialogue M1): streak of identical completed
+        // actions; M2 "again?" categories gate on it. Set before the event so
+        // subscribers see the updated streak.
+        cat.repetition =
+          cat.repetition.actionId === act.id
+            ? { actionId: act.id, count: cat.repetition.count + 1 }
+            : { actionId: act.id, count: 1 };
         this.bus.emit({ type: "action-completed", cat: cat.id, action: act.id, target: cat.action.targetId });
         cat.action = undefined; // → re-decides next tick
       }
@@ -276,7 +295,10 @@ export class Simulation {
   }
 
   weather(w: WorldState["weather"]): void {
+    const from = this.world.weather;
+    if (from === w) return; // no event on a same-value set (06-dialogue §3 bug 1)
     this.world.weather = w;
+    this.bus.emit({ type: "weather-changed", from, to: w });
   }
 
   // ---------- soup ousting drama chain (spec §4) ----------
@@ -406,7 +428,7 @@ export class Simulation {
       cook.memory.push({ subject: instigatorId, event: "turned everyone against me", charge: -0.6, at: this.world.time });
       cook.memory.push({ subject: "soup-station", event: "not my kitchen anymore", charge: -0.35, at: this.world.time });
       if (instigator) {
-        cook.relationships[instigatorId] = clampRel((cook.relationships[instigatorId] ?? 0) - 0.4);
+        nudgeRel(cook, instigatorId, -0.4, (ev) => this.bus.emit(ev));
       }
       const pick = selectLine(cook, "confront_quit", this.world.time, this.rng);
       if (pick) this.speak(cook, pick.text, "speech", undefined, true, pick.key);
@@ -465,7 +487,7 @@ export class Simulation {
       // three separate variables: soup quality vs opinion of cook (spec §4)
       const good = e.quality === "good" || e.quality === "mediocre";
       customer.memory.push({ subject: cook.id, event: `${e.quality} soup`, charge: good ? 0.06 : -0.12, at: this.world.time });
-      customer.relationships[cook.id] = clampRel((customer.relationships[cook.id] ?? 0) + (good ? 0.02 : -0.05));
+      nudgeRel(customer, cook.id, good ? 0.02 : -0.05, (ev) => this.bus.emit(ev));
     });
 
     this.bus.on("stole", (e) => {
@@ -473,7 +495,7 @@ export class Simulation {
       const victim = this.byId(e.victim);
       if (victim) {
         victim.memory.push({ subject: e.thief, event: `${e.thief} stole my ${e.item}`, charge: -0.4, at: this.world.time });
-        victim.relationships[e.thief] = clampRel((victim.relationships[e.thief] ?? 0) - 0.25);
+        nudgeRel(victim, e.thief, -0.25, (ev) => this.bus.emit(ev));
       }
     });
 
@@ -599,10 +621,15 @@ export class Simulation {
   static load(json: string): Simulation {
     const world = JSON.parse(json) as WorldState;
     if (world.cult && !world.cult.attempts) world.cult.attempts = {}; // pre-cooldown saves
-    for (const c of world.cats) {
+    for (const [i, c] of world.cats.entries()) {
       c.lineHistory ??= {};
       c.identity.anchors ??= [];
       if (typeof c.lastBubbleAt !== "number") c.lastBubbleAt = NEVER_MS; // -Infinity → null in JSON
+      // Pre-M1-dialogue saves: stagger the default by index (same reasoning
+      // as world.ts) so an old save doesn't chorus ambient windows on load.
+      if (typeof c.lastAmbientAt !== "number")
+        c.lastAmbientAt = world.time - (i / world.cats.length) * DIALOGUE.ambientIntervalMs;
+      c.repetition ??= { actionId: "", count: 0 };
       const house = world.buildings.find((b) => b.owner === c.id);
       if (house && house.state?.stage == null) house.state = { ...house.state, stage: 2 }; // pre-build-arc saves
     }
@@ -614,10 +641,6 @@ export class Simulation {
     if (fire && fire.state!.fuel == null) fire.state!.fuel = 1;
     return new Simulation(world);
   }
-}
-
-function clampRel(v: number): number {
-  return v < -1 ? -1 : v > 1 ? 1 : v;
 }
 
 export { qtier };

@@ -13,7 +13,11 @@
    because un-burning lines shifts rng draw points; per-seed digests diverge
    from `7d1819c` but remain healthy (reviewer verified 3 seeds).
 2. **M1** — state gaps: `weather-changed` + `relationship-milestone` events, derived
-   flags, ambient emitter (`lastAmbientAt`, serialized), renderer bubble wrap.
+   context queries, ambient emitter (`lastAmbientAt`, serialized), repetition
+   streak, renderer bubble wrap. ← DONE (reviewed PASS, 36/36 tests; save/load
+   determinism of the ambient window verified empirically). Uncommitted.
+   M2 author note: `nearbyCats()` includes collapsed cats (perception idiom) —
+   casual-chatter categories should add their own filter if needed.
 3. **M2+** — fresh content waves: ~40 lines/category, locked voice, 4 tone bands
    incl. full dark (user-approved override), strongest categories first.
 4. **M3** — ambient speech live + TONE_WEIGHTS + priority bias.
@@ -39,6 +43,14 @@
 - Seasons, festival, add-a-cat arrivals → M5, each behind its own go-ahead.
 - Tutorial hints / objective reminders / unlock reactions / story flags /
   predators → **never** (prohibited by locked design filters 1 & 4).
+
+## Known issues (logged, not fixed)
+- `actions/index.ts` module-level `itemCounter` is not serialized: loading a
+  save in a fresh process re-mints item ids from 1 and can collide with saved
+  item ids. Pre-existing since MVP; fix = derive ids from a serialized counter
+  in WorldState. (Flagged M1 review, 2026-07-17.)
+- `test/fast-forward.test.ts` `?? 0 > 0` precedence makes one assertion nearly
+  vacuous — tighten in a future test pass.
 
 ## Last verified state
 - Commit `7d1819c` pushed (cat sprites + walk squish + facing + view latch).

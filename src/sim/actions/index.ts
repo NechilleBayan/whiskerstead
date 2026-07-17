@@ -3,6 +3,7 @@
 
 import { ACTION_MS, BUILDCFG, CULT, FISH_TIERS, OUST, SOUP, HEALTH, THEFT, TREES } from "../../config/tuning.ts";
 import { feed, rest } from "../needs.ts";
+import { nudgeRel } from "../relationships.ts";
 import { preferenceFactor } from "../scoring.ts";
 import { choppableTrees } from "../trees.ts";
 import type { Building, CatState, Item, Site, WorldState } from "../types.ts";
@@ -34,9 +35,6 @@ function home(cat: CatState, world: WorldState): Building | undefined {
 function writeMemory(cat: CatState, subject: string, event: string, charge: number, now: number) {
   cat.memory.push({ subject, event, charge, at: now });
   if (cat.memory.length > 40) cat.memory.shift();
-}
-function nudgeRel(a: CatState, bId: string, delta: number) {
-  a.relationships[bId] = clamp(-1, 1, (a.relationships[bId] ?? 0) + delta);
 }
 function clamp(lo: number, hi: number, v: number) {
   return v < lo ? lo : v > hi ? hi : v;
@@ -336,13 +334,13 @@ const socialize: ActionDef = {
     const rel = cat.relationships[other.id] ?? 0;
     const argueChance = 0.12 + (rel < 0 ? 0.2 : 0) + (cat.needs.hunger < 0.3 ? 0.1 : 0);
     if (rng.chance(argueChance)) {
-      nudgeRel(cat, other.id, -0.12);
-      nudgeRel(other, cat.id, -0.1);
+      nudgeRel(cat, other.id, -0.12, emit);
+      nudgeRel(other, cat.id, -0.1, emit);
       cat.emotion = "annoyed";
       emit({ type: "argued", a: cat.id, b: other.id });
     } else {
-      nudgeRel(cat, other.id, 0.04);
-      nudgeRel(other, cat.id, 0.035);
+      nudgeRel(cat, other.id, 0.04, emit);
+      nudgeRel(other, cat.id, 0.035, emit);
       cat.emotion = "happy";
       const topic = pickGossipTopic(cat, world, rng) ?? "the weather";
       emit({ type: "chatted", a: cat.id, b: other.id, topic });
@@ -469,7 +467,7 @@ const rescue: ActionDef = {
     victim.needs.energy = Math.max(victim.needs.energy, 0.4);
     emit({ type: "rescued", rescuer: cat.id, victim: victim.id });
     writeMemory(victim, cat.id, `${cat.identity.name} saved me`, 0.6, now);
-    nudgeRel(victim, cat.id, 0.4);
+    nudgeRel(victim, cat.id, 0.4, emit);
     cat.emotion = "happy";
     void world;
   },
@@ -571,7 +569,7 @@ const recruit: ActionDef = {
       }
     } else {
       outcome = other.identity.personality === "cynic" ? "aggressive-refuse" : "polite-refuse";
-      nudgeRel(other, cat.id, -0.05);
+      nudgeRel(other, cat.id, -0.05, emit);
     }
     emit({ type: "recruited", founder: cat.id, target: other.id, outcome });
   },
@@ -764,7 +762,7 @@ const steal: ActionDef = {
     const sneaky = victim.action?.id === "sleep" ? 0.15 : THEFT.catchChance;
     if (rng.chance(sneaky)) {
       emit({ type: "theft-caught", thief: cat.id, victim: victim.id });
-      nudgeRel(victim, cat.id, -0.2);
+      nudgeRel(victim, cat.id, -0.2, emit);
       writeMemory(victim, cat.id, `caught ${cat.identity.name} stealing`, -0.35, now);
       cat.emotion = "scared";
     } else {
@@ -806,12 +804,12 @@ const beg: ActionDef = {
       other.inventory.splice(other.inventory.indexOf(item), 1);
       give(cat, item);
       emit({ type: "begged", beggar: cat.id, target: other.id, outcome: "gave" });
-      nudgeRel(cat, other.id, 0.15);
+      nudgeRel(cat, other.id, 0.15, emit);
       writeMemory(cat, other.id, `${other.identity.name} shared food`, 0.3, now);
       cat.emotion = "happy";
     } else {
       emit({ type: "begged", beggar: cat.id, target: other.id, outcome: "refused" });
-      nudgeRel(cat, other.id, -0.08);
+      nudgeRel(cat, other.id, -0.08, emit);
       writeMemory(cat, other.id, "refused to share", -0.15, now);
       cat.emotion = "annoyed";
     }
@@ -845,8 +843,8 @@ const gossip: ActionDef = {
     // Secondhand opinion: listener absorbs a diluted charge about the subject.
     writeMemory(other, juicy.subject, `heard: ${juicy.event}`, juicy.charge * 0.4, now);
     juicy.charge *= 0.7; // old news fades — the same story won't fuel gossip forever
-    nudgeRel(cat, other.id, 0.02);
-    nudgeRel(other, cat.id, 0.02);
+    nudgeRel(cat, other.id, 0.02, emit);
+    nudgeRel(other, cat.id, 0.02, emit);
     cat.needs.social = Math.min(1, cat.needs.social + 0.35);
     other.needs.social = Math.min(1, other.needs.social + 0.2);
   },
@@ -904,8 +902,8 @@ const comfort: ActionDef = {
     other.needs.comfort = Math.min(1, other.needs.comfort + 0.35);
     cat.needs.social = Math.min(1, cat.needs.social + 0.3);
     other.needs.social = Math.min(1, other.needs.social + 0.3);
-    nudgeRel(other, cat.id, 0.08);
-    nudgeRel(cat, other.id, 0.05);
+    nudgeRel(other, cat.id, 0.08, emit);
+    nudgeRel(cat, other.id, 0.05, emit);
     writeMemory(other, cat.id, `${cat.identity.name} sat with me`, 0.25, now);
     other.emotion = "neutral";
     cat.emotion = "happy";

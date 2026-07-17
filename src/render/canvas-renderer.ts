@@ -487,11 +487,18 @@ export class CanvasRenderer {
       const by = cat.pos.y - 40;
       const text = bub.text;
       ctx.font = "10px 'Comic Sans MS', sans-serif";
-      const w = Math.max(24, ctx.measureText(text).width + 12);
+      // Word-wrap safety net (06-dialogue M1): long lines wrap at maxWidthU
+      // and truncate with an ellipsis past maxLines. The box grows UPWARD so
+      // the tail and anchor stay put; short lines render exactly as before.
+      const lines = this.wrapBubbleText(text, BUBBLE.maxWidthU, BUBBLE.maxLines);
+      let textW = 0;
+      for (const l of lines) textW = Math.max(textW, ctx.measureText(l).width);
+      const w = Math.max(24, textW + 12);
+      const extra = (lines.length - 1) * BUBBLE.lineHeightU;
       ctx.fillStyle = bub.kind === "gossip" ? "#efe7f5" : PALETTE.cream;
       ctx.strokeStyle = PALETTE.ink;
       ctx.lineWidth = 2;
-      this.roundRectWobble(bx - w / 2, by - 16, w, 20, 8);
+      this.roundRectWobble(bx - w / 2, by - 16 - extra, w, 20 + extra, 8);
       ctx.fill();
       ctx.stroke();
       if (bub.kind === "gossip") ctx.stroke(); // double outline
@@ -505,9 +512,36 @@ export class CanvasRenderer {
       ctx.stroke();
       ctx.fillStyle = PALETTE.ink;
       ctx.textAlign = "center";
-      ctx.fillText(text, bx, by - 2);
+      // last line sits where the single line always did; earlier lines stack up
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], bx, by - 2 - (lines.length - 1 - i) * BUBBLE.lineHeightU);
+      }
       ctx.globalAlpha = 1;
     }
+  }
+
+  /** Greedy word-wrap against measureText (current font must be set).
+   *  Returns 1..maxLines lines; overflow past maxLines is truncated onto the
+   *  last line with an ellipsis. A single word wider than maxWidth stays on
+   *  its own line (this is a safety net — the parse-time char budget is the
+   *  real limit). Fast path: text that already fits comes back unchanged. */
+  private wrapBubbleText(text: string, maxWidth: number, maxLines: number): string[] {
+    const ctx = this.ctx;
+    if (ctx.measureText(text).width <= maxWidth) return [text];
+    const lines: string[] = [""];
+    for (const word of text.split(" ")) {
+      const cur = lines[lines.length - 1];
+      const tryLine = cur ? `${cur} ${word}` : word;
+      if (cur && ctx.measureText(tryLine).width > maxWidth) lines.push(word);
+      else lines[lines.length - 1] = tryLine;
+    }
+    if (lines.length > maxLines) {
+      lines.length = maxLines;
+      let last = lines[maxLines - 1];
+      while (last.length > 1 && ctx.measureText(`${last}…`).width > maxWidth) last = last.slice(0, -1);
+      lines[maxLines - 1] = `${last}…`;
+    }
+    return lines;
   }
 
   // ---------- items ----------

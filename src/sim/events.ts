@@ -1,8 +1,14 @@
 // Typed event bus — spec §4 (architecture). Everything notable emits an event;
 // memory, gossip, relationships, stats, and debug all subscribe. Nothing polls.
 
+/** Relationship label bands, cut at REL_THRESHOLDS (06-dialogue M1). */
+export type RelBand = "rival" | "neutral" | "friend" | "crush";
+
 export type GameEvent =
   | { type: "phase-changed"; phase: string; day: number }
+  | { type: "weather-changed"; from: "clear" | "rain" | "storm"; to: "clear" | "rain" | "storm" }
+  | { type: "relationship-milestone"; a: string; b: string; from: RelBand; to: RelBand }
+  | { type: "ambient-window"; cat: string }
   | { type: "decision"; cat: string; action: string; target?: string; roll: RollBreakdown[] }
   | { type: "action-started"; cat: string; action: string; target?: string }
   | { type: "action-completed"; cat: string; action: string; target?: string }

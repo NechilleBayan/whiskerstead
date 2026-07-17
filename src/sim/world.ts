@@ -3,7 +3,7 @@
 // (spawn build-arc) but MVP begins with houses present so life is legible fast.
 
 import { ROSTER, makeIdentity } from "../content/cats.ts";
-import { NEED_IDS, NEVER_MS } from "../config/tuning.ts";
+import { DIALOGUE, NEED_IDS, NEVER_MS } from "../config/tuning.ts";
 import { spawnForest } from "./trees.ts";
 import type { Building, CatState, Site, WorldState } from "./types.ts";
 
@@ -69,6 +69,11 @@ export function createWorld(seed = 1337): WorldState {
       facing: 1,
       emotion: "neutral",
       lastBubbleAt: NEVER_MS, // serializable stand-in for -Infinity
+      // First ambient windows staggered across one interval by roster index —
+      // deterministic (no rng draw at world build) and the village never
+      // fires its opening chatter chorus on the same tick.
+      lastAmbientAt: -(i / ROSTER.length) * DIALOGUE.ambientIntervalMs,
+      repetition: { actionId: "", count: 0 },
       lineHistory: {},
     };
     return cat;

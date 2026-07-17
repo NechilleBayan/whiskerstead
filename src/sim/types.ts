@@ -82,6 +82,10 @@ export interface CatState extends BaseEntity {
   facing: number; // -1 left, 1 right
   emotion: string; // last expressed emotion for renderer
   lastBubbleAt: number;
+  /** Ambient speech window timer (06-dialogue M1) — last window fire time. */
+  lastAmbientAt: number;
+  /** Consecutive completions of the same action — M2 repetition lines gate on it. */
+  repetition: { actionId: string; count: number };
   /** Bubble duplicate-suppression: line id -> last time used (spec §8). */
   lineHistory: Record<string, number>;
   cultRole?: string;

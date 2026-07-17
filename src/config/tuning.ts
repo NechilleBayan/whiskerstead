@@ -48,6 +48,20 @@ export const BUBBLE = {
   perCatCooldownMs: 20000,
   maxOnScreen: 3,
   queueCap: 8, // world.bubbles array bound — oldest is evicted past this
+  /** Word-wrap safety net (06-dialogue M1). Units are world units. */
+  maxWidthU: 160, // text wider than this wraps
+  maxLines: 3, // wrapped text truncates with an ellipsis past this
+  lineHeightU: 12, // vertical advance per extra wrapped line
+} as const;
+
+/** Ambient speech windows (06-dialogue M1). One game day = 60 real minutes,
+ *  so game ms == real ms: a ~2.5-minute interval gives each cat a couple
+ *  dozen window chances per day — occasional, not chatty, since most windows
+ *  pass silent once M2/M3 wire content in. Jitter (± on each next interval)
+ *  drifts cats out of sync so the village never speaks in chorus. */
+export const DIALOGUE = {
+  ambientIntervalMs: 150_000,
+  ambientJitterMs: 45_000,
 } as const;
 
 /** Action durations (ms) — pulled straight from the systems spec. */
