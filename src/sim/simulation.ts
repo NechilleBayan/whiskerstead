@@ -84,9 +84,17 @@ export class Simulation {
     // windows up.
     const performing = cat.action?.phase === "perform";
     const sleepPerform = performing && cat.action!.id === "sleep";
-    if ((!performing || sleepPerform) && this.world.time - cat.lastAmbientAt >= DIALOGUE.ambientIntervalMs) {
+    // M3 campfire fix: a bonfire perform seats the cat at the fire — a social,
+    // chatty beat, so its windows must fire (routed to campfire_talk below).
+    // Other performs stay suppressed (work is heads-down).
+    const campfirePerform = performing && cat.action!.id === "bonfire";
+    // M3 cadence fix: a ~9s bonfire sit needs a short window cadence, else the
+    // 150s general interval almost never lands one mid-sit. Reuses lastAmbientAt.
+    const interval = campfirePerform ? DIALOGUE.campfireIntervalMs : DIALOGUE.ambientIntervalMs;
+    const jitter = campfirePerform ? DIALOGUE.campfireJitterMs : DIALOGUE.ambientJitterMs;
+    if ((!performing || sleepPerform || campfirePerform) && this.world.time - cat.lastAmbientAt >= interval) {
       // jitter the NEXT interval so cats drift out of sync (seeded rng only)
-      cat.lastAmbientAt = this.world.time + this.rng.range(-DIALOGUE.ambientJitterMs, DIALOGUE.ambientJitterMs);
+      cat.lastAmbientAt = this.world.time + this.rng.range(-jitter, jitter);
       this.bus.emit({ type: "ambient-window", cat: cat.id });
     }
 
@@ -520,9 +528,14 @@ export class Simulation {
       const cat = this.byId(e.cat);
       if (!cat) return;
       const sleeping = cat.action?.id === "sleep" && cat.action.phase === "perform";
-      if (!this.rng.chance(sleeping ? DIALOGUE.sleepTalkChance : DIALOGUE.ambientSpeakChance)) return;
+      // M3: a bonfire perform routes to campfire_talk only, at its own chance;
+      // the gate (lit fire + company) still runs, so an unlit/lonely fire → silence.
+      const atCampfire = cat.action?.id === "bonfire" && cat.action.phase === "perform";
+      const chance = sleeping ? DIALOGUE.sleepTalkChance : atCampfire ? DIALOGUE.campfireTalkChance : DIALOGUE.ambientSpeakChance;
+      if (!this.rng.chance(chance)) return;
+      const only = sleeping ? "sleep_talk" : atCampfire ? "campfire_talk" : undefined;
       const eligible = AMBIENT_CATEGORIES.filter(
-        (c) => (sleeping ? c.id === "sleep_talk" : c.id !== "sleep_talk") && c.gate(cat, this.world),
+        (c) => (only ? c.id === only : c.id !== "sleep_talk" && c.id !== "campfire_talk") && c.gate(cat, this.world),
       );
       if (eligible.length === 0) return;
       const category = eligible[this.rng.weightedIndex(eligible.map((c) => c.weight))];

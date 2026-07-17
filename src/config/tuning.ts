@@ -72,6 +72,27 @@ export const DIALOGUE = {
   /** Sleeping cats mumble much less often than awake cats muse — a sleep chunk
    *  usually catches at most one window, so this is roughly per-nap odds. */
   sleepTalkChance: 0.15,
+  /** M3: chance a seated bonfire-perform cat's ambient window becomes
+   *  campfire_talk. Higher than ambientSpeakChance — the fire is the social,
+   *  chatty part of the day — but a window is still often silent. */
+  campfireTalkChance: 0.5,
+  /** M3 cadence fix: short ambient-window interval WHILE seated at a bonfire
+   *  perform. A bonfire sit is only ~9s, so the 150s ambientIntervalMs almost
+   *  never lands a window during it — this 3.5s cadence reliably gives a sit a
+   *  chatter opportunity (usually one on entry, ~1-2 more across the sit). */
+  campfireIntervalMs: 3_500,
+  /** M3 cadence fix: small jitter for the campfire cadence — the ±45s ambient
+   *  jitter would be nonsensical against a 3.5s interval. */
+  campfireJitterMs: 1_200,
+  /** M3: floor applied to every tone-band multiplier in selection, so a
+   *  disfavored band is damped but never silenced (roll-don't-max §4 — every
+   *  authored line stays reachable). */
+  toneFloor: 0.15,
+  /** M3: near-death (critical/collapsed) down-weight on the unhinged/dark
+   *  bands. This IS §4's "no jokes near death" rule, realized as a soft ×0.2
+   *  damper (§5 "not to zero") rather than a hard filter — grim humor stays
+   *  reachable, just rare. */
+  urgencyGrimMult: 0.2,
   /** Chance of a dream report right after a sleep chunk completes — modest, so
    *  waking is usually quiet and dreams stay a treat. */
   dreamChance: 0.2,
@@ -127,6 +148,20 @@ export const AMBIENT_WEIGHTS: Record<string, number> = {
   need_curiosity: 1.2,
   campfire_talk: 1.6,
   sleep_talk: 1.0, // moot in practice — the only eligible category mid-sleep
+};
+
+/** Per-personality tone-band lean (06-dialogue M3): multipliers over the four
+ *  tone bands (normal/dry/unhinged/dark) when selecting a toned line. These are
+ *  MULTIPLIERS, never gates (CLAUDE.md rule 4 "roll, don't max"): DIALOGUE.
+ *  toneFloor keeps every band reachable, so personality only *leans* a cat's
+ *  voice, never locks it. Plain string-keyed records on purpose — importing
+ *  PersonalityId/Tone here would create a config↔types/content import cycle. */
+export const TONE_WEIGHTS: Record<string, Record<string, number>> = {
+  planner:  { normal: 1.4, dry: 1.3, unhinged: 0.3,  dark: 0.5  },
+  chaos:    { normal: 0.8, dry: 0.4, unhinged: 1.7,  dark: 0.7  },
+  optimist: { normal: 1.6, dry: 0.5, unhinged: 0.8,  dark: 0.25 },
+  cynic:    { normal: 0.4, dry: 1.5, unhinged: 0.6,  dark: 1.4  },
+  cryptic:  { normal: 0.6, dry: 0.3, unhinged: 1.4,  dark: 1.5  },
 };
 
 /** Action durations (ms) — pulled straight from the systems spec. */
