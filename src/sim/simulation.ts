@@ -1,0 +1,616 @@
+// Simulation orchestrator — the headless core. Zero render imports (spec
+// §Architecture 1). Two clocks (spec §2): a continuous frame update and a
+// decision tick fired on idle / action-complete.
+
+import { ROLL_TEMPERATURE, WALK_SPEED, HEALTH, BUBBLE, OUST, LINE_SUPPRESS_MS } from "../config/tuning.ts";
+import { pickLine } from "../content/bubbles.ts";
+import { ACTIONS, qtier } from "./actions/index.ts";
+import type { ActionCtx, ActionDef } from "./actions/types.ts";
+import { EventBus, type GameEvent } from "./events.ts";
+import { clamp01, decayNeeds, updateHealthStage } from "./needs.ts";
+import { perceive, distance } from "./perception.ts";
+import { Rng } from "./rng.ts";
+import { scoreCandidate, type Candidate } from "./scoring.ts";
+import { phaseAt } from "./time.ts";
+import { spawnForest, updateTrees } from "./trees.ts";
+import type { BaseEntity, CatState, Vec2, WorldState } from "./types.ts";
+
+export class Simulation {
+  readonly world: WorldState;
+  readonly bus = new EventBus();
+  private rng: Rng;
+  private actionById = new Map<string, ActionDef>();
+
+  constructor(world: WorldState) {
+    this.world = world;
+    this.rng = new Rng(world.rngState);
+    for (const a of ACTIONS) this.actionById.set(a.id, a);
+    this.wireSubscribers();
+  }
+
+  // ---------- main step ----------
+
+  /** Advance the sim by dtMs of real time (== game time; frozen while closed). */
+  tick(dtMs: number): void {
+    const dt = Math.min(dtMs, 250); // clamp big gaps (tab was backgrounded)
+    this.world.time += dt;
+    this.bus.setClock(this.world.time);
+
+    const { phase, day } = phaseAt(this.world.time);
+    if (phase !== this.world.phase || day !== this.world.day) {
+      this.world.phase = phase;
+      this.world.day = day;
+      this.bus.emit({ type: "phase-changed", phase, day });
+      this.evaluateSoupDrama();
+      // Lit bonfire relaxes back to unlit outside gathering hours.
+      const fire = this.world.buildings.find((b) => b.type === "bonfire");
+      if (fire && phase !== "sunset" && phase !== "night") {
+        fire.state!.lit = 0;
+        fire.active = false;
+      }
+      // Forage patches regrow one unit per phase (seasonal skins are visual
+      // only — mechanically one "vegetable" resource, design spec §The World).
+      for (const b of this.world.buildings) {
+        if (b.type === "forage") b.state!.veg = Math.min(3, ((b.state!.veg as number) ?? 0) + 1);
+        if (b.type === "market") b.state!.stocked = Math.min(1, ((b.state!.stocked as number) ?? 0) + 0.34);
+        if (b.type === "bakery") b.state!.bread = Math.min(2, ((b.state!.bread as number) ?? 0) + 1);
+      }
+    }
+
+    updateTrees(this.world);
+    for (const cat of this.world.cats) this.updateCat(cat, dt);
+    this.expireBubbles();
+    this.world.rngState = this.rng.state;
+  }
+
+  private updateCat(cat: CatState, dt: number): void {
+    if (cat.grabbed) return; // player holds it; frozen until release
+
+    const hasSocial = this.world.cats.some((c) => c.id !== cat.id && !c.grabbed);
+    decayNeeds(cat, dt, hasSocial);
+    this.updateCondition(cat, dt);
+
+    if (cat.stage === "collapsed") return; // waits for rescue
+
+    if (!cat.action) {
+      this.decide(cat);
+      return;
+    }
+
+    const act = this.actionById.get(cat.action.id)!;
+    if (cat.action.phase === "goto") {
+      const dest = this.actionDest(cat, act);
+      if (!dest || this.moveToward(cat, dest, dt) <= act.reach) {
+        cat.action.phase = "perform";
+        cat.action.startedAt = this.world.time;
+        const ctx = this.ctx(cat, act);
+        cat.action.duration = act.duration(ctx);
+        act.onStart?.(ctx);
+        this.bus.emit({ type: "action-started", cat: cat.id, action: act.id, target: cat.action.targetId });
+      }
+    } else {
+      // perform: fatigue lengthens tasks slightly
+      const slow = cat.condition < HEALTH.strainedBelow ? 1.2 : 1;
+      if (this.world.time - cat.action.startedAt >= cat.action.duration * slow) {
+        const ctx = this.ctx(cat, act);
+        act.onComplete(ctx);
+        this.bus.emit({ type: "action-completed", cat: cat.id, action: act.id, target: cat.action.targetId });
+        cat.action = undefined; // → re-decides next tick
+      }
+    }
+  }
+
+  // ---------- decision tick (spec §2) ----------
+
+  private decide(cat: CatState): void {
+    const percepts = perceive(cat, this.world);
+    const byId = new Map<string, BaseEntity>();
+    for (const p of percepts) byId.set(p.entity.id, p.entity);
+
+    const candidates: Candidate[] = [];
+    for (const action of ACTIONS) {
+      const targets = action.candidates(cat, this.world);
+      for (const target of targets) {
+        // Targets an action enumerates are trusted even if far (village is small).
+        const c = scoreCandidate(cat, this.world, action, target);
+        if (c.score > 0) candidates.push(c);
+      }
+    }
+    if (candidates.length === 0) return;
+
+    // Roll, don't max — weighted random with temperature (spec §2.5).
+    const weights = candidates.map((c) => Math.pow(c.score, 1 / ROLL_TEMPERATURE));
+    const idx = this.rng.weightedIndex(weights);
+    const chosen = candidates[idx];
+
+    this.commit(cat, chosen);
+    this.bus.emit({
+      type: "decision",
+      cat: cat.id,
+      action: chosen.action.id,
+      target: chosen.target?.id,
+      roll: candidates.map((c) => c.breakdown).sort((a, b) => b.score - a.score).slice(0, 6),
+    });
+  }
+
+  private commit(cat: CatState, c: Candidate): void {
+    cat.action = {
+      id: c.action.id,
+      targetId: c.target?.id,
+      startedAt: this.world.time,
+      duration: 0,
+      phase: c.action.requiresProximity ? "goto" : "perform",
+    };
+    if (cat.action.phase === "perform") cat.action.startedAt = this.world.time;
+    c.action.onCommit?.(this.ctx(cat, c.action)); // e.g. reserve a tree en route
+    const text = c.action.bubble?.(cat, c.target);
+    if (text) this.speak(cat, text, "speech");
+    else this.speak(cat, "", "thought", c.action.intent); // intention icon
+  }
+
+  private actionDest(cat: CatState, act: ActionDef): Vec2 | undefined {
+    if (act.destination) {
+      const d = act.destination(this.ctx(cat, act));
+      if (d) {
+        if (cat.action && !cat.action.targetId) {
+          // stash synthetic dest so it stays stable across frames
+          cat.action.data = cat.action.data ?? {};
+          if (!cat.action.data.dest) cat.action.data.dest = d;
+          return cat.action.data.dest as Vec2;
+        }
+        return d;
+      }
+    }
+    if (cat.action?.targetId) {
+      const t = this.findEntity(cat.action.targetId);
+      return t?.pos;
+    }
+    return undefined;
+  }
+
+  // ---------- movement ----------
+
+  /** Move cat toward dest; returns remaining distance. */
+  private moveToward(cat: CatState, dest: Vec2, dt: number): number {
+    const dx = dest.x - cat.pos.x;
+    const dy = dest.y - cat.pos.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 1) return 0;
+    const speed = WALK_SPEED * (0.55 + 0.45 * cat.condition) * (dt / 1000);
+    const step = Math.min(d, speed);
+    cat.pos.x += (dx / d) * step;
+    cat.pos.y += (dy / d) * step;
+    cat.facing = dx < 0 ? -1 : 1;
+    return d - step;
+  }
+
+  // ---------- health / near-death (spec §9) ----------
+
+  private updateCondition(cat: CatState, dt: number): void {
+    const days = dt / (60 * 60 * 1000);
+    const starving = cat.needs.hunger < 0.18;
+    const exhausted = cat.needs.energy < 0.15;
+    if (starving || exhausted) {
+      cat.condition = Math.max(HEALTH.criticalFloor, cat.condition - days * 3.5);
+    } else if (cat.needs.hunger > 0.5 && cat.needs.energy > 0.5) {
+      cat.condition = Math.min(1, cat.condition + days * 2.0); // recover with food+rest
+    }
+    const prev = cat.stage;
+    updateHealthStage(cat);
+
+    // Collapse only from compounded severe state, never one bad moment.
+    if (cat.stage !== "collapsed" && cat.condition <= HEALTH.criticalFloor + 0.001 && (starving || exhausted)) {
+      cat.stage = "collapsed";
+      // drop carried items to the ground (distinct from sleep — spec §Near-Death)
+      for (const it of cat.inventory) {
+        it.holder = undefined;
+        it.pos = { x: cat.pos.x, y: cat.pos.y };
+        this.world.groundItems.push(it);
+      }
+      cat.inventory = [];
+      cat.action = undefined;
+      cat.emotion = "scared";
+      this.bus.emit({ type: "collapsed", cat: cat.id, cause: exhausted ? "exhaustion" : "hunger" });
+    } else if (prev !== cat.stage) {
+      this.bus.emit({ type: "condition-changed", cat: cat.id, stage: cat.stage });
+    }
+  }
+
+  // ---------- player interaction (Gentle Influence) ----------
+
+  grab(catId: string): void {
+    const cat = this.byId(catId);
+    if (!cat) return;
+    cat.grabbed = true;
+    cat.action = undefined; // drop current intention
+    cat.emotion = "scared";
+    this.bus.emit({ type: "grabbed", cat: cat.id });
+  }
+
+  dragTo(catId: string, pos: Vec2): void {
+    const cat = this.byId(catId);
+    if (cat?.grabbed) cat.pos = { ...pos };
+  }
+
+  /** Release → local evaluation (score only what's here), brief reaction, then
+   *  return to internal compass. May write a memory that shifts this place's
+   *  weight for this cat (spec §Player Interaction). */
+  release(catId: string): void {
+    const cat = this.byId(catId);
+    if (!cat) return;
+    cat.grabbed = false;
+    cat.emotion = "neutral";
+    this.bus.emit({ type: "dropped", cat: cat.id });
+
+    // Local evaluation: nearest reactable thing biases a memory.
+    const near = perceive(cat, this.world).filter((p) => p.dist < 90)[0];
+    if (near) {
+      const liked = this.localAppeal(cat, near.entity);
+      const charge = clamp01((liked - 0.5) * 2) * (liked >= 0.5 ? 1 : -1) * 0.25;
+      if (Math.abs(charge) > 0.03) {
+        const subject = near.entity.kind === "building" ? (near.entity as any).type : near.entity.id;
+        cat.memory.push({ subject, event: charge > 0 ? "nice here" : "put me here", charge, at: this.world.time });
+      }
+    }
+    // brief reaction
+    this.speak(cat, this.rng.chance(0.5) ? "!" : "?", "reaction");
+  }
+
+  private localAppeal(cat: CatState, e: BaseEntity): number {
+    if (e.kind === "building") {
+      const t = (e as any).type as string;
+      const map: Record<string, string> = {
+        pond: "ponds",
+        library: "libraries",
+        bonfire: "campfires",
+        "soup-station": "warm_soup",
+      };
+      const key = map[t];
+      const w = key ? cat.identity.preferences[key] ?? 0 : 0;
+      return 0.5 + w * 0.5;
+    }
+    if (e.kind === "cat") {
+      return 0.5 + (cat.relationships[e.id] ?? 0) * 0.5;
+    }
+    return 0.5;
+  }
+
+  weather(w: WorldState["weather"]): void {
+    this.world.weather = w;
+  }
+
+  // ---------- soup ousting drama chain (spec §4) ----------
+
+  /** Evaluated on each phase change. Ousting requires a PATTERN: 3+ removal
+   *  supporters, sustained 2 game days, ≥2 distinct bad pots, an instigator,
+   *  and failed reputation repair. Three separate variables per villager:
+   *  dislike-the-soup (memories) / dislike-the-cook (relationship) / both. */
+  evaluateSoupDrama(): void {
+    const station = this.world.buildings.find((b) => b.type === "soup-station");
+    if (!station) return;
+    const cookId = station.state?.cook as string | undefined;
+    const cook = cookId ? this.byId(cookId) : undefined;
+    if (!cook) return;
+    const badPots = (station.state!.badPots as number) ?? 0;
+
+    const supporters = this.world.cats.filter((c) => {
+      if (c.id === cook.id) return false;
+      const badSoupMemories = c.memory.filter(
+        (m) => m.subject === cook.id && m.charge < 0 && m.event.includes("soup"),
+      ).length;
+      const dislikesCook = (c.relationships[cook.id] ?? 0) < 0.1;
+      return badSoupMemories >= 2 && dislikesCook; // wants-them-removed = both
+    });
+
+    const campaign = this.world.oustCampaign;
+    if (!campaign) {
+      if (supporters.length >= OUST.minSupporters && badPots >= OUST.minBadPots) {
+        const instigator = supporters.reduce((a, b) =>
+          (a.relationships[cook.id] ?? 0) <= (b.relationships[cook.id] ?? 0) ? a : b,
+        );
+        this.world.oustCampaign = { cook: cook.id, instigator: instigator.id, since: this.world.time };
+        this.bus.emit({ type: "oust-started", cook: cook.id, instigator: instigator.id });
+      }
+      return;
+    }
+
+    // Reputation repair worked — support fell below the pattern threshold.
+    if (supporters.length < OUST.minSupporters) {
+      this.world.oustCampaign = undefined;
+      this.bus.emit({ type: "oust-dissolved", cook: campaign.cook });
+      return;
+    }
+
+    // Sustained long enough → confrontation (branching scene).
+    if (this.world.time - campaign.since >= OUST.sustainMs) {
+      this.confrontCook(cook, campaign.instigator, supporters, station);
+      this.world.oustCampaign = undefined;
+    }
+  }
+
+  private confrontCook(
+    cook: CatState,
+    instigatorId: string,
+    supporters: CatState[],
+    station: import("./types.ts").Building,
+  ): void {
+    const instigator = this.byId(instigatorId);
+    const defender = this.world.cats.find(
+      (c) => c.id !== cook.id && (c.relationships[cook.id] ?? 0) > 0.4 && !supporters.includes(c),
+    );
+
+    // Branch 1: a friend defends — campaign collapses, village splits into camps.
+    if (defender && this.rng.chance(0.35)) {
+      this.bus.emit({ type: "confronted", cook: cook.id, instigator: instigatorId, outcome: "defended" });
+      station.state!.badPots = Math.floor(((station.state!.badPots as number) ?? 0) / 2);
+      for (const s of supporters) {
+        s.memory.push({ subject: defender.id, event: "took the cook's side", charge: -0.15, at: this.world.time });
+      }
+      const line = pickLine(defender, "confront_defended", this.world.time, this.rng);
+      if (line) this.speak(defender, line, "speech", undefined, true);
+      return;
+    }
+
+    // Branch 2: cook-off — resolution hinges on whether someone wants the job.
+    // Ambition varies by personality; a challenger must be in decent shape.
+    const ambition: Record<string, number> = { planner: 0.8, chaos: 0.5, cynic: 0.35, optimist: 0.25, cryptic: 0.15 };
+    const challenger = supporters.find(
+      (s) => s.condition > 0.5 && this.rng.chance(ambition[s.identity.personality] ?? 0.3),
+    );
+    if (challenger && this.rng.chance(0.45)) {
+      const roll = (c: CatState) =>
+        (c.identity.occupation === "cook" ? 0.15 : 0) + c.condition * 0.3 + this.rng.range(0, 0.5);
+      const cookWins = roll(cook) >= roll(challenger);
+      const outcome = cookWins ? "cook-off:cook-won" : "cook-off:challenger-won";
+      this.bus.emit({ type: "confronted", cook: cook.id, instigator: instigatorId, outcome });
+      station.state!.badPots = 0;
+      if (cookWins) {
+        // Proved themselves — reputation repair by demonstration.
+        for (const s of supporters) {
+          for (const m of s.memory) if (m.subject === cook.id && m.charge < 0) m.charge *= 0.3;
+        }
+        cook.memory.push({ subject: "soup-station", event: "defended my kitchen", charge: 0.4, at: this.world.time });
+        challenger.memory.push({ subject: cook.id, event: "lost the cook-off", charge: -0.2, at: this.world.time });
+      } else {
+        // Fair contest: role changes hands with less bitterness than a quit.
+        cook.identity.occupation = "villager";
+        challenger.identity.occupation = "cook";
+        station.state!.cook = challenger.id;
+        cook.memory.push({ subject: challenger.id, event: "lost my kitchen fair and square", charge: -0.25, at: this.world.time });
+        challenger.memory.push({ subject: "soup-station", event: "won the cook-off", charge: 0.45, at: this.world.time });
+      }
+      const line = pickLine(cookWins ? cook : challenger, "cookoff", this.world.time, this.rng);
+      if (line) this.speak(cookWins ? cook : challenger, line, "speech", undefined, true);
+      return;
+    }
+
+    // Cook confidence: condition + standing with the ringleader.
+    const conf = 0.3 + cook.condition * 0.4 + (cook.relationships[instigatorId] ?? 0) * 0.3;
+    if (this.rng.chance(Math.max(0.1, Math.min(0.85, conf)))) {
+      // Branch 2: apology + probation — reputation repair.
+      this.bus.emit({ type: "confronted", cook: cook.id, instigator: instigatorId, outcome: "apology" });
+      station.state!.badPots = 0;
+      for (const s of supporters) {
+        for (const m of s.memory) if (m.subject === cook.id && m.charge < 0) m.charge *= 0.4;
+      }
+      const line = pickLine(cook, "confront_apology", this.world.time, this.rng);
+      if (line) this.speak(cook, line, "speech", undefined, true);
+    } else {
+      // Branch 3: angry quit / ousted. Stays in village, loses role, grudge
+      // toward ringleader, avoids the station (negative memory drives it).
+      this.bus.emit({ type: "confronted", cook: cook.id, instigator: instigatorId, outcome: "quit" });
+      this.bus.emit({ type: "ousted", cook: cook.id, instigator: instigatorId });
+      cook.identity.occupation = "villager";
+      station.state!.cook = "";
+      station.state!.badPots = 0;
+      cook.memory.push({ subject: instigatorId, event: "turned everyone against me", charge: -0.6, at: this.world.time });
+      cook.memory.push({ subject: "soup-station", event: "not my kitchen anymore", charge: -0.35, at: this.world.time });
+      if (instigator) {
+        cook.relationships[instigatorId] = clampRel((cook.relationships[instigatorId] ?? 0) - 0.4);
+      }
+      const line = pickLine(cook, "confront_quit", this.world.time, this.rng);
+      if (line) this.speak(cook, line, "speech", undefined, true);
+    }
+  }
+
+  // ---------- bubbles ----------
+
+  private speak(
+    cat: CatState,
+    text: string,
+    kind: "speech" | "thought" | "reaction" | "gossip",
+    icon?: string,
+    force = false,
+  ): void {
+    const now = this.world.time;
+    if (!force && kind !== "reaction" && now - cat.lastBubbleAt < BUBBLE.perCatCooldownMs) return;
+    if (!force && this.world.bubbles.length >= BUBBLE.maxOnScreen && kind === "thought") return;
+    // Duplicate-line suppression across several game days (spec §8): a line
+    // said too recently downgrades to a thought icon — intent stays legible.
+    if ((kind === "speech" || kind === "gossip") && text) {
+      const k = `spoke:${text}`;
+      if (now - (cat.lineHistory[k] ?? -1e12) < LINE_SUPPRESS_MS) {
+        kind = "thought";
+        text = "";
+      } else {
+        cat.lineHistory[k] = now;
+      }
+    }
+    cat.lastBubbleAt = now;
+    const ttl = kind === "reaction" ? BUBBLE.reactionHoldMs : BUBBLE.holdMs + BUBBLE.fadeInMs + BUBBLE.fadeOutMs;
+    this.world.bubbles.push({ cat: cat.id, text: text || (icon ? `[${icon}]` : "…"), kind, bornAt: now, ttl });
+    if (this.world.bubbles.length > 8) this.world.bubbles.shift();
+    this.bus.emit({ type: "bubble", cat: cat.id, text: text || icon || "", kind });
+  }
+
+  private expireBubbles(): void {
+    this.world.bubbles = this.world.bubbles.filter((b) => this.world.time - b.bornAt < b.ttl);
+  }
+
+  // ---------- event subscribers: memory, relationships, gossip ----------
+
+  private wireSubscribers(): void {
+    this.bus.on("served", (e) => {
+      if (e.type !== "served") return;
+      const customer = this.byId(e.customer);
+      const cook = this.byId(e.cook);
+      if (!customer || !cook) return;
+      // three separate variables: soup quality vs opinion of cook (spec §4)
+      const good = e.quality === "good" || e.quality === "mediocre";
+      customer.memory.push({ subject: cook.id, event: `${e.quality} soup`, charge: good ? 0.06 : -0.12, at: this.world.time });
+      customer.relationships[cook.id] = clampRel((customer.relationships[cook.id] ?? 0) + (good ? 0.02 : -0.05));
+    });
+
+    this.bus.on("stole", (e) => {
+      if (e.type !== "stole") return;
+      const victim = this.byId(e.victim);
+      if (victim) {
+        victim.memory.push({ subject: e.thief, event: `${e.thief} stole my ${e.item}`, charge: -0.4, at: this.world.time });
+        victim.relationships[e.thief] = clampRel((victim.relationships[e.thief] ?? 0) - 0.25);
+      }
+    });
+
+    // Narration layer: notable events become personality-flavored bubbles.
+    // Priority per spec §8: rare events force through the chatter cooldown.
+    this.bus.on("*", (e) => {
+      const say = (catId: string | undefined, category: string, opts?: { force?: boolean; kind?: "speech" | "gossip"; fill?: Record<string, string> }) => {
+        const cat = catId ? this.byId(catId) : undefined;
+        if (!cat) return;
+        const line = pickLine(cat, category, this.world.time, this.rng, opts?.fill);
+        if (line) this.speak(cat, line, opts?.kind ?? "speech", undefined, opts?.force ?? false);
+      };
+      switch (e.type) {
+        case "fished":
+          say(e.cat, e.result === "catch" ? "fish_catch" : "fish_miss");
+          break;
+        case "ate":
+          if (e.quality === "bad" || e.quality === "awful") say(e.cat, "eat_bad");
+          else if (e.quality === "good") say(e.cat, "eat_good");
+          break;
+        case "cooked":
+          say(e.cat, "cook_done");
+          break;
+        case "stole":
+          say(e.thief, "steal_success");
+          break;
+        case "theft-caught":
+          say(e.thief, "steal_caught", { force: true });
+          break;
+        case "begged":
+          say(e.beggar, e.outcome === "refused" ? "beg_refused" : "beg");
+          break;
+        case "build-progressed":
+          say(e.cat, "build");
+          break;
+        case "argued":
+          say(e.a, "argue");
+          break;
+        case "gossiped":
+          say(e.from, "gossip_open", { kind: "gossip", fill: { who: this.byId(e.about)?.identity.name ?? e.about } });
+          break;
+        case "discovered-artifact":
+          say(e.cat, "cult_visit", { force: true });
+          break;
+        case "recruited":
+          say(e.founder, "cult_recruit", { force: true });
+          break;
+        case "collapsed":
+          say(e.cat, "rescue", { force: true });
+          break;
+        case "rescued":
+          say(e.victim, "recovered", { force: true });
+          break;
+        case "oust-started":
+          say(e.instigator, "oust_campaign", { force: true, kind: "gossip" });
+          break;
+        case "pond-accident":
+          say(e.cat, "pond_accident", { force: true });
+          break;
+        case "comforted":
+          say(e.from, "comfort");
+          break;
+        case "offered":
+          say(e.cat, "cult_visit");
+          break;
+        case "scavenged":
+          say(e.cat, "scavenge");
+          break;
+        case "chopped":
+          say(e.cat, "chop");
+          break;
+      }
+    });
+  }
+
+  // ---------- lookups ----------
+
+  private ctx(cat: CatState, act: ActionDef): ActionCtx {
+    return {
+      cat,
+      world: this.world,
+      target: cat.action?.targetId ? this.findEntity(cat.action.targetId) : undefined,
+      rng: this.rng,
+      emit: (e: GameEvent) => this.bus.emit(e),
+      now: this.world.time,
+    };
+  }
+
+  private byId(id: string): CatState | undefined {
+    return this.world.cats.find((c) => c.id === id);
+  }
+
+  findEntity(id: string): BaseEntity | undefined {
+    return (
+      this.world.cats.find((c) => c.id === id) ??
+      this.world.buildings.find((b) => b.id === id) ??
+      this.world.sites.find((s) => s.id === id) ??
+      this.world.groundItems.find((i) => i.id === id)
+    );
+  }
+
+  /** Nearest cat to a world point, within radius — for click-to-grab. */
+  catAt(pos: Vec2, radius = 40): CatState | undefined {
+    let best: CatState | undefined;
+    let bestD = radius;
+    for (const c of this.world.cats) {
+      const d = distance(c.pos, pos);
+      if (d < bestD) {
+        best = c;
+        bestD = d;
+      }
+    }
+    return best;
+  }
+
+  // ---------- persistence (spec §6): deterministic save/load ----------
+
+  save(): string {
+    this.world.rngState = this.rng.state;
+    return JSON.stringify(this.world);
+  }
+
+  static load(json: string): Simulation {
+    const world = JSON.parse(json) as WorldState;
+    if (world.cult && !world.cult.attempts) world.cult.attempts = {}; // pre-cooldown saves
+    for (const c of world.cats) {
+      c.lineHistory ??= {};
+      c.identity.anchors ??= [];
+      if (typeof c.lastBubbleAt !== "number") c.lastBubbleAt = -1e12; // -Infinity → null in JSON
+      const house = world.buildings.find((b) => b.owner === c.id);
+      if (house && house.state?.stage == null) house.state = { ...house.state, stage: 2 }; // pre-build-arc saves
+    }
+    // Pre-forest saves: grow the forest in place (seed-derived, deterministic).
+    if (!world.buildings.some((b) => b.type === "tree")) {
+      world.buildings.push(...spawnForest(world.buildings, world.sites, world.seed, world.bounds));
+    }
+    const fire = world.buildings.find((b) => b.type === "bonfire");
+    if (fire && fire.state!.fuel == null) fire.state!.fuel = 1;
+    return new Simulation(world);
+  }
+}
+
+function clampRel(v: number): number {
+  return v < -1 ? -1 : v > 1 ? 1 : v;
+}
+
+export { qtier };
