@@ -13,7 +13,8 @@ import { createWorld } from "../src/sim/world.ts";
 import { reconcile } from "../src/sim/actions/reconcile.ts";
 import { relBand } from "../src/sim/relationships.ts";
 import { pickHeardRumor } from "../src/sim/dialogue/context.ts";
-import { GATES } from "../src/content/dialogue/categories.ts";
+import { AMBIENT_CATEGORIES, GATES } from "../src/content/dialogue/categories.ts";
+import { distance } from "../src/sim/perception.ts";
 import { Rng } from "../src/sim/rng.ts";
 import { TONED_LINES, TONES } from "../src/content/dialogue/lines.ts";
 import { DAY_MS, RECONCILE, RUMOR } from "../src/config/tuning.ts";
@@ -287,4 +288,158 @@ test("determinism holds and rumorCooldowns survive a byte-exact save round-trip"
     sim.world.time,
     "rumorCooldowns survived the round-trip",
   );
+});
+
+// ---------- FEATURE C — campfire conversations + the gathering lever
+// (09-dialogue-m4-spec §C). Part 1 edits the bonfire ActionDef's own appeal
+// (a BOUNDED, ADDITIVE company-pull bias, never a gate) and duration (longer
+// evening sits that overlap). Part 2 is event-driven turn-taking: a spoken
+// campfire_talk line emits campfire-chatted, which may draw ONE campfire_reply
+// from a DIFFERENT seated neighbor at the same lit fire (chain depth capped at
+// 1). campfire_reply is EVENT-ONLY — never in the ambient roll. No new state.
+// Tests: gather; conversation; no double-fire; silence-common; determinism (now
+// carrying gather/chatted events); byte-exact save round-trip. ----------
+
+const BONFIRE_REACH = 60; // mirrors the bonfire ActionDef's reach
+
+/** Cats currently seated (bonfire perform) within reach of the fire. */
+function seatedCount(world: WorldState, firePos: { x: number; y: number }): number {
+  return world.cats.filter(
+    (c) => c.action?.id === "bonfire" && c.action.phase === "perform" && distance(c.pos, firePos) <= BONFIRE_REACH,
+  ).length;
+}
+
+/** Seat a small group at the (lit) fire in the perform phase, and send everyone
+ *  else to the far corner so only the seated group counts. Returns the group. */
+function seatGroupAtFire(sim: Simulation, size: number): CatState[] {
+  const fire = sim.world.buildings.find((b) => b.type === "bonfire")!;
+  fire.state!.lit = 1;
+  const group = sim.world.cats.slice(0, size);
+  for (const c of group) {
+    c.pos = { ...fire.pos };
+    c.stage = "stable";
+    c.action = { id: "bonfire", targetId: fire.id, phase: "perform", startedAt: sim.world.time, duration: 40_000 };
+  }
+  for (const c of sim.world.cats.slice(size)) c.pos = { x: 0, y: 0 };
+  return group;
+}
+
+test("cats gather at the evening fire: ≥2 seated at once, gatherings fire, campfire_talk is frequent", () => {
+  const sim = new Simulation(createWorld(9));
+  const names = sim.world.cats.map((c) => c.identity.name);
+  const talkTexts = textsOf("campfire_talk", names);
+  const fire = sim.world.buildings.find((b) => b.type === "bonfire")!;
+  let gathered = 0, talk = 0, maxSeated = 0;
+  sim.bus.on("campfire-gathered", () => gathered++);
+  sim.bus.on("bubble", (e) => {
+    if (e.type === "bubble" && e.kind === "thought" && talkTexts.has(e.text)) talk++;
+  });
+  for (let t = 0; t < 3 * DAY_MS; t += 200) {
+    sim.tick(200);
+    const s = seatedCount(sim.world, fire.pos);
+    if (s > maxSeated) maxSeated = s;
+  }
+  assert.ok(maxSeated >= 2, `at least two cats sit at the same fire at once (saw ${maxSeated})`);
+  assert.ok(gathered >= 1, `campfire-gathered fires once company forms (saw ${gathered})`);
+  // The M3 campfire_talk baseline was ~0-2 over 3 days; the gathering lever
+  // (overlapping evening sits keeping the campfire_talk gate open) lifts it well
+  // past that.
+  assert.ok(talk >= 4, `campfire_talk fires well above the M3 baseline (saw ${talk})`);
+});
+
+test("a campfire_talk line draws a reply from a DIFFERENT seated cat, filled with the speaker's name", () => {
+  const sim = new Simulation(createWorld(77));
+  const names = sim.world.cats.map((c) => c.identity.name);
+  const fire = sim.world.buildings.find((b) => b.type === "bonfire")!;
+  const group = seatGroupAtFire(sim, 3);
+  const speaker = group[0];
+  const replyTexts = textsOf("campfire_reply", names);
+  const replies: Array<{ cat: string; text: string }> = [];
+  sim.bus.on("bubble", (e) => {
+    if (e.type === "bubble" && e.kind === "thought" && replyTexts.has(e.text)) replies.push({ cat: e.cat, text: e.text });
+  });
+  // A campfire_talk utterance emits campfire-chatted. Replayed until a reply lands
+  // — replyChance < 1, so not every chatted event produces one; advancing 30s each
+  // time clears the 20s per-cat bubble cooldown so a reply can actually show.
+  for (let i = 0; i < 300 && replies.length === 0; i++) {
+    sim.world.time += 30_000;
+    sim.bus.setClock(sim.world.time);
+    sim.world.bubbles = [];
+    sim.bus.emit({ type: "campfire-chatted", cat: speaker.id, fire: fire.id });
+  }
+  assert.ok(replies.length >= 1, "a seated neighbor eventually replies to the campfire line");
+  const r = replies[0];
+  assert.ok(r.cat === group[1].id || r.cat === group[2].id, "the reply comes from a DIFFERENT seated cat");
+  const speakerReplies = textsOf("campfire_reply", [speaker.identity.name]);
+  assert.ok(speakerReplies.has(r.text), "the reply is a campfire_reply line naming the speaker");
+});
+
+test("campfire_reply is event-only and never fires from the same cat that spoke the campfire line", () => {
+  // event-only: not an ambient gate, never in the ambient roll — so a single
+  // window can never yield both campfire_talk and campfire_reply from one cat.
+  assert.ok(!("campfire_reply" in GATES), "campfire_reply is not an ambient gate");
+  assert.ok(!AMBIENT_CATEGORIES.some((c) => c.id === "campfire_reply"), "campfire_reply never competes in the ambient roll");
+
+  const sim = new Simulation(createWorld(505));
+  const names = sim.world.cats.map((c) => c.identity.name);
+  const fire = sim.world.buildings.find((b) => b.type === "bonfire")!;
+  const group = seatGroupAtFire(sim, 3);
+  const speaker = group[0];
+  const replyTexts = textsOf("campfire_reply", names);
+  let speakerReplied = false, neighborReplied = false;
+  sim.bus.on("bubble", (e) => {
+    if (e.type !== "bubble" || e.kind !== "thought" || !replyTexts.has(e.text)) return;
+    if (e.cat === speaker.id) speakerReplied = true;
+    else neighborReplied = true;
+  });
+  // Every campfire-chatted here comes from the SAME speaker; a correct subscriber
+  // only ever replies from a neighbor (id ≠ speaker).
+  for (let i = 0; i < 400; i++) {
+    sim.world.time += 30_000;
+    sim.bus.setClock(sim.world.time);
+    sim.world.bubbles = [];
+    sim.bus.emit({ type: "campfire-chatted", cat: speaker.id, fire: fire.id });
+  }
+  assert.ok(neighborReplied, "replies do fire from seated neighbors (the mechanism is live)");
+  assert.ok(!speakerReplied, "the speaker never voices a reply to their own campfire line");
+});
+
+test("silence stays the common outcome: ambient speech is a minority of windows over 2 days", () => {
+  const sim = new Simulation(createWorld(1337));
+  const names = sim.world.cats.map((c) => c.identity.name);
+  // Every ambient category's possible texts (campfire_talk included). campfire_reply
+  // is event-only and NOT an ambient category, so it is intentionally not counted.
+  const ambientTexts = new Set<string>();
+  for (const c of AMBIENT_CATEGORIES) for (const t of textsOf(c.id, names)) ambientTexts.add(t);
+  let windows = 0, spoken = 0;
+  sim.bus.on("*", (e) => {
+    if (e.type === "ambient-window") windows++;
+    if (e.type === "bubble" && e.kind === "thought" && ambientTexts.has(e.text)) spoken++;
+  });
+  for (let t = 0; t < 2 * DAY_MS; t += 200) sim.tick(200);
+  assert.ok(windows > 0, "windows fired");
+  assert.ok(spoken > 0, "some windows produced ambient speech");
+  assert.ok(spoken < windows / 2, `silence is common even with campfire gathering (${spoken}/${windows})`);
+});
+
+test("determinism: 2-day same-seed transcript is identical, including campfire gather + chat events", () => {
+  const transcript = (seed: number) => {
+    const sim = new Simulation(createWorld(seed));
+    const out: string[] = [];
+    sim.bus.on("*", (e) => out.push(JSON.stringify(e).replace(/item-([a-z]+)-\d+/g, "item-$1-#")));
+    for (let t = 0; t < 2 * DAY_MS; t += 200) sim.tick(200);
+    return out;
+  };
+  const a = transcript(9);
+  assert.deepEqual(a, transcript(9), "same-seed event streams match with Feature C wiring live");
+  assert.ok(a.some((e) => e.includes('"campfire-gathered"')), "campfire-gathered appears in the stream");
+  assert.ok(a.some((e) => e.includes('"campfire-chatted"')), "campfire-chatted appears in the stream");
+});
+
+test("save round-trip stays byte-exact with campfire gathering in play (Feature C adds no new state)", () => {
+  const sim = new Simulation(createWorld(9));
+  for (let t = 0; t < DAY_MS; t += 200) sim.tick(200); // runs through an evening gathering
+  const snapshot = sim.save();
+  const restored = Simulation.load(snapshot);
+  assert.equal(restored.save(), snapshot, "reloaded world re-serializes byte-for-byte");
 });

@@ -238,6 +238,30 @@ export const RUMOR = {
   cooldownMs: DAY_MS,
 } as const;
 
+/** Campfire conversations + the gathering lever — 06-dialogue M4 §C. Two levers,
+ *  no new serialized state:
+ *  1) GATHER — the bonfire ActionDef's own appeal gains a BOUNDED, ADDITIVE
+ *     company-pull term (companyPull × min(companyPullCap, seatedCount)). It's a
+ *     bias, never a gate (rule 4); the cap keeps a busy fire from dominating the
+ *     roll and starving eat/sleep/work. Evening bias stays in timeFit.bonfire —
+ *     NOT duplicated here.
+ *  2) LINGER — evening sits run sitMinMs..sitMaxMs (longer, so they OVERLAP and
+ *     company≥1 holds, keeping the campfire_talk gate open across the 3.5s window
+ *     cadence). sitMaxMs is capped so a long sit never starves needs.
+ *  Turn-taking: a spoken campfire_talk line may draw ONE reply from a seated
+ *  neighbor at the same lit fire, at replyChance (< 1, plus the 20s per-cat
+ *  bubble cooldown → silence stays common; the reply never re-emits → chain
+ *  depth capped at 1). campfireTalkChance stays 0.5 — frequency now comes from
+ *  more/overlapping sits, not a higher per-window chance. */
+export const CAMPFIRE = {
+  companyPull: 0.6, // additive appeal per already-seated cat (a bias, never a gate)
+  companyPullCap: 3, // ceiling on the company term — prevents bonfire domination
+  sitMinMs: 12_000, // evening sit floor (longer than the ~6-12s daytime warm-up)
+  sitMaxMs: 22_000, // evening sit ceiling — capped so a sit can't starve needs
+  gatherCompanyMin: 1, // seated others needed at a lit fire to announce a gathering
+  replyChance: 0.5, // odds a campfire_talk line draws one seated-neighbor reply
+} as const;
+
 /** Near-death floors — spec §9. Condition never falls below this. */
 export const HEALTH = {
   criticalFloor: 0.12,

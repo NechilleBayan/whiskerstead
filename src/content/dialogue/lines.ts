@@ -1984,4 +1984,55 @@ export const TONED_LINES: Record<string, Partial<Record<Tone, LineTable>>> = {
       cryptic: ["the knot holds. for now, {who}"],
     },
   },
+
+  // ---------- campfire_reply: a turn-taking reply to a fireside neighbor who
+  // just spoke (06-dialogue M4 §C). EVENT-ONLY — never in GATES/AMBIENT_CATEGORIES,
+  // so it never competes in the ambient roll and never double-fires with
+  // campfire_talk. Short, warm/ribbing reactions to {who}=the neighbor; every line
+  // addresses them by name. Dark band stays wry (the glow is brief), not grim. ----
+  campfire_reply: {
+    normal: {
+      any: [
+        "you said it, {who}",
+        "right there with you, {who}",
+        "mm, {who}'s onto something",
+        "couldn't agree more, {who}",
+        "ha, fair point, {who}",
+        "well put, {who}",
+        "same, honestly, {who}",
+      ],
+      optimist: ["love where {who}'s head is at"],
+      planner: ["{who}'s right. noting it for later"],
+    },
+    dry: {
+      any: [
+        "bold take, {who}",
+        "sure, {who}. if you say so",
+        "{who} talks, the fire listens",
+        "deep. for a log fire, {who}",
+        "noted, {who}. do go on",
+      ],
+      cynic: ["easy for {who} to say, warm as we are"],
+    },
+    unhinged: {
+      any: [
+        "YES {who}. exactly THAT",
+        "{who} GETS it!!",
+        "say it LOUDER, {who}",
+        "sparks agree with {who}!!",
+        "preach by firelight, {who}!!",
+      ],
+      chaos: ["{who} said it so i'm YELLING it"],
+    },
+    dark: {
+      any: [
+        "we'll all be ash, but you're right {who}",
+        "true, {who}. the dark's still listening",
+        "even the embers nod at {who}",
+        "wise, {who}. shame it fades by dawn",
+      ],
+      cynic: ["{who}'s right. rare, this close to the cold"],
+      cryptic: ["the flame heard {who} too"],
+    },
+  },
 };

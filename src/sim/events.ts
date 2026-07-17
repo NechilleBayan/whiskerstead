@@ -28,6 +28,8 @@ export type GameEvent =
   | { type: "reconciled"; a: string; b: string; outcome: "accepted" | "rebuffed" }
   | { type: "gossiped"; from: string; about: string; event: string }
   | { type: "rumor-shared"; cat: string; about: string; charge: "good" | "bad" }
+  | { type: "campfire-gathered"; cat: string; fire: string }
+  | { type: "campfire-chatted"; cat: string; fire: string }
   | { type: "discovered-artifact"; cat: string }
   | { type: "cult-founded"; founder: string }
   | { type: "recruited"; founder: string; target: string; outcome: string }

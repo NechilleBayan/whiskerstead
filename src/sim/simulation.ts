@@ -2,7 +2,7 @@
 // §Architecture 1). Two clocks (spec §2): a continuous frame update and a
 // decision tick fired on idle / action-complete.
 
-import { ROLL_TEMPERATURE, WALK_SPEED, HEALTH, CONDITION, BUBBLE, DIALOGUE, OUST, LINE_SUPPRESS_MS, LINE_HISTORY_CAP, NEVER_MS } from "../config/tuning.ts";
+import { ROLL_TEMPERATURE, WALK_SPEED, HEALTH, CONDITION, BUBBLE, CAMPFIRE, DIALOGUE, OUST, LINE_SUPPRESS_MS, LINE_HISTORY_CAP, NEVER_MS } from "../config/tuning.ts";
 import { ACTIONS, qtier } from "./actions/index.ts";
 import type { ActionCtx, ActionDef } from "./actions/types.ts";
 import { AMBIENT_CATEGORIES } from "../content/dialogue/categories.ts";
@@ -566,6 +566,38 @@ export class Simulation {
           charge: category.id === "rumor_good" ? "good" : "bad",
         });
       }
+      // Campfire turn-taking (06-dialogue M4 §C): a real campfire_talk utterance
+      // may draw ONE reply from a seated neighbor (handled below). The fire is the
+      // cat's own bonfire target.
+      if (spoke && category.id === "campfire_talk" && cat.action?.targetId) {
+        this.bus.emit({ type: "campfire-chatted", cat: cat.id, fire: cat.action.targetId });
+      }
+    });
+
+    // Campfire reply (06-dialogue M4 §C): a spoken campfire_talk line may draw a
+    // single turn-taking reply from a SEATED, awake, non-collapsed neighbor at the
+    // SAME lit fire (never the speaker). replyChance (< 1) plus the 20s per-cat
+    // bubble cooldown keep silence common; the reply does NOT re-emit
+    // campfire-chatted, so the chain depth is capped at 1 (no flood).
+    this.bus.on("campfire-chatted", (e) => {
+      if (e.type !== "campfire-chatted") return;
+      const speaker = this.byId(e.cat);
+      const fire = this.world.buildings.find((b) => b.id === e.fire);
+      if (!speaker || !fire || ((fire.state?.lit as number) ?? 0) !== 1) return;
+      const reach = this.actionById.get("bonfire")!.reach;
+      const neighbors = this.world.cats.filter(
+        (c) =>
+          c.id !== speaker.id &&
+          c.stage !== "collapsed" &&
+          c.action?.id === "bonfire" &&
+          c.action.phase === "perform" &&
+          distance(c.pos, fire.pos) <= reach,
+      );
+      if (neighbors.length === 0) return;
+      if (!this.rng.chance(CAMPFIRE.replyChance)) return;
+      const replier = this.rng.pick(neighbors);
+      const pick = selectLine(replier, "campfire_reply", this.world.time, this.rng, { who: speaker.identity.name });
+      if (pick) this.speak(replier, pick.text, "thought", undefined, false, pick.key);
     });
 
     // Narration layer: notable events become personality-flavored bubbles.

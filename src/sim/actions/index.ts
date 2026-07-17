@@ -1,8 +1,9 @@
 // Core action set — 02-simulation-systems. Each action is self-contained data.
 // This registry is what the decision loop scores and rolls over.
 
-import { ACTION_MS, BUILDCFG, CULT, FISH_TIERS, OUST, SOUP, HEALTH, THEFT, TREES } from "../../config/tuning.ts";
+import { ACTION_MS, BUILDCFG, CAMPFIRE, CULT, FISH_TIERS, OUST, SOUP, HEALTH, THEFT, TREES } from "../../config/tuning.ts";
 import { feed, rest } from "../needs.ts";
+import { distance } from "../perception.ts";
 import { nudgeRel } from "../relationships.ts";
 import { preferenceFactor } from "../scoring.ts";
 import { choppableTrees } from "../trees.ts";
@@ -45,6 +46,18 @@ function otherCats(cat: CatState, world: WorldState): CatState[] {
 }
 function trait(cat: CatState, t: string): boolean {
   return cat.identity.traits.includes(t);
+}
+/** Cats OTHER than `cat` currently seated (bonfire perform) within `reach` of a
+ *  given fire — the gathering lever (06-dialogue M4 §C). Pure read over
+ *  world.cats: no rng, no mutation. Feeds the company-pull appeal term and the
+ *  gather emit. */
+function seatedAtFire(cat: CatState, world: WorldState, fire: Building, reach: number): number {
+  let n = 0;
+  for (const c of world.cats) {
+    if (c.id === cat.id) continue;
+    if (c.action?.id === "bonfire" && c.action.phase === "perform" && distance(c.pos, fire.pos) <= reach) n++;
+  }
+  return n;
 }
 
 // ---------- actions ----------
@@ -361,21 +374,44 @@ const bonfireGather: ActionDef = {
   requiresProximity: true,
   reach: 60,
   candidates: (_cat, world) => buildings(world, "bonfire"),
-  appeal: (cat) => 0.6 * preferenceFactor(cat, ["campfires", "crowds"]) * (1 - cat.needs.comfort + 0.4),
-  duration: ({ rng }) => rng.range(6000, 12000),
-  onStart: ({ cat, target }) => {
+  appeal: (cat, world, t) => {
+    const fire = t as Building | undefined;
+    const base = 0.6 * preferenceFactor(cat, ["campfires", "crowds"]) * (1 - cat.needs.comfort + 0.4);
+    // Company pull (06-dialogue M4 §C): a BOUNDED, ADDITIVE bias toward a fire
+    // that already has cats seated — the gathering lever. Additive to a positive
+    // base, so it only biases the roll (never a gate, rule 4); the cap keeps a
+    // busy fire from dominating and starving eat/sleep/work. Evening bias lives
+    // in timeFit.bonfire, not here.
+    const seated = fire ? seatedAtFire(cat, world, fire, bonfireGather.reach) : 0;
+    return base + CAMPFIRE.companyPull * Math.min(CAMPFIRE.companyPullCap, seated);
+  },
+  duration: ({ world, rng }) => {
+    // Evening sits run LONGER so they OVERLAP — company≥1 holds, the campfire_talk
+    // gate stays open, and the 3.5s window cadence lands chatter. Daytime stays a
+    // quick warm-up. ONE rng.range draw either way; sitMaxMs is capped so a sit
+    // never starves needs.
+    const evening = world.phase === "sunset" || world.phase === "night";
+    return evening ? rng.range(CAMPFIRE.sitMinMs, CAMPFIRE.sitMaxMs) : rng.range(6000, 12000);
+  },
+  onStart: ({ cat, world, target, emit }) => {
     // Lighting the fire consumes wood — from the woodpile, or the arriving
     // cat's own bundle. No fuel, no flame (a cold gathering is a story too).
     const fire = target as Building;
-    if (fire.state!.lit) return;
-    const fuel = (fire.state!.fuel as number) ?? 0;
-    if (fuel >= TREES.campfireCost) {
-      fire.state!.fuel = fuel - TREES.campfireCost;
-      fire.state!.lit = 1;
-      fire.active = true;
-    } else if (take(cat, "wood")) {
-      fire.state!.lit = 1;
-      fire.active = true;
+    if (!fire.state!.lit) {
+      const fuel = (fire.state!.fuel as number) ?? 0;
+      if (fuel >= TREES.campfireCost) {
+        fire.state!.fuel = fuel - TREES.campfireCost;
+        fire.state!.lit = 1;
+        fire.active = true;
+      } else if (take(cat, "wood")) {
+        fire.state!.lit = 1;
+        fire.active = true;
+      }
+    }
+    // Gathering lever (06-dialogue M4 §C): arriving to a LIT fire that already
+    // has company announces a gathering. Pure read + emit — no state, no rng.
+    if (((fire.state!.lit as number) ?? 0) === 1 && seatedAtFire(cat, world, fire, bonfireGather.reach) >= CAMPFIRE.gatherCompanyMin) {
+      emit({ type: "campfire-gathered", cat: cat.id, fire: fire.id });
     }
   },
   onComplete: ({ cat, target }) => {
