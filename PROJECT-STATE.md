@@ -1,11 +1,13 @@
 # PROJECT-STATE
 
 ## Current milestone
-**Dialogue M4 — social depth** (campfire convos, rumors via `heard:` memories,
-reconcile action). Next after M3 landed 2026-07-18. M0 `3e70a4b`, M1 `ddacb2c`,
-M2 wave 1 `7845ff7`, M2 wave 2 `a7a720a`, M3 `<pending>`. M4 is the last
-dialogue-arc milestone; M5 (seasons/festival/arrivals) stays gated behind its
-own go-ahead.
+**Dialogue arc COMPLETE (M0–M4)** as of 2026-07-18. Commits: M0 `3e70a4b`,
+M1 `ddacb2c`, M2 wave 1 `7845ff7`, M2 wave 2 `a7a720a`, M3 `1aaacb6`,
+M4-A `9084883`, M4-B `37f9a29`, M4-C `1c509c0`. Full suite 73/73 green,
+typecheck clean. **Nothing in progress.** The only remaining roadmap items are
+gated: **M5** (seasons / festival / add-a-cat arrivals) — each behind its OWN
+explicit go-ahead per the locked filters — and small logged cleanups (see
+Known issues). Do not start M5 without the user's go-ahead.
 
 ## Task queue
 1. **M0** — context-gated selector plumbing: `src/sim/dialogue/`, side-effect-free
@@ -69,9 +71,29 @@ own go-ahead.
    and cats rarely gather+linger at a lit fire yet. Frequency strengthens in M4
    ("campfire convos") when cats gather; M3 ships the correct plumbing, not the
    gathering behavior. campfireTalkChance left at 0.5 (M4 will revisit).
-6. **M4** — social depth (campfire convos, rumors via `heard:` memories,
-   reconcile action). Campfire convos should also make cats gather+linger at the
-   lit fire (the lever that makes M3's campfire_talk frequent).
+6. **M4** — social depth, built as three separately-verified increments (spec
+   `files/09-dialogue-m4-spec.md`). ← ALL DONE (each reviewed PASS):
+   - **M4-A reconcile** `9084883`: new `reconcile` ActionDef — a cat seeks a
+     rival, rolls accept/rebuff, nudges the band up toward neutral, writes
+     ADDITIVE memories (old grudge memories persist — rule 5). `reconciled`
+     event, `reconcileCooldowns` state (serialized), reconcile/reconcile_rebuffed
+     categories, actionBias rows. 62/62.
+   - **M4-B rumors** `37f9a29`: `rumor_good`/`rumor_bad` ambient gates surface a
+     held `heard:` memory ({who}=real subject, valence=charge sign); silent when
+     none held — no fabrication. `pickHeardRumor` helper, `rumor-shared` event,
+     `rumorCooldowns` state. `speak()` now returns whether a bubble showed so the
+     stamp/emit commit only on a real utterance (all other callers ignore it;
+     determinism unaffected). 67/67.
+   - **M4-C campfire convos** `1c509c0`: bonfire appeal gains a bounded additive
+     company-pull + longer evening sits so cats gather+linger (the lever making
+     M3 `campfire_talk` frequent); event-driven depth-1 turn-taking
+     (`campfire-chatted`→`campfire_reply` from a seated neighbour). `campfire_reply`
+     is event-only (never in the ambient GATES → no double-fire). No new state.
+     `companyPull` tuned to 0.6 (1.5 skewed the comfort/scavenge canary). Digest:
+     gathering ~4.6×, campfire_talk ~3.4×, routine unskewed, 0 permanent collapse.
+     73/73.
+   Deferred from M4 (own go-ahead): cross-tick delayed replies, reconcile reply
+   from the other cat, rumor re-propagation, raising campfireTalkChance.
 
 ## Reference assets
 - `files/whiskerstead_village_grid_map.png` + `_instructions.md` — positioning
@@ -106,8 +128,11 @@ own go-ahead.
   committed. Grid map + `7d1819c` sprites earlier, green.
 - M2 wave 2 `a7a720a`: reviewer PASS. Dialogue library now 56 toned categories
   (~1265 lines) + 9 flat crisis/dormant categories.
-- M3 (`<pending>`): 56/56 headless tests green, typecheck clean, reviewer PASS
-  on core + producer-verified cadence delta. Selection is now tone-weighted
-  (roll-don't-max, one rng draw), near-death damps grim humor, campfire plumbing
-  in place (chatter sparse until M4 gathering).
-- Uncommitted at handoff: none expected after the M3 commit lands.
+- M3 `1aaacb6`: tone-weighted selection, near-death grim damper, campfire
+  plumbing. Reviewer PASS.
+- M4 `9084883`/`37f9a29`/`1c509c0`: reconcile action, rumors from `heard:`
+  memories, campfire conversations + gathering. Each reviewer PASS.
+- Full suite **73/73** green, typecheck clean at the tip of `main`
+  (`1c509c0` + this doc). Dialogue arc M0–M4 complete; no work in progress.
+- Next (gated, needs go-ahead): M5 expansion. Logged cleanups below are
+  optional and also want their own go-ahead.
