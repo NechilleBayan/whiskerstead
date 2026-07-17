@@ -2,11 +2,11 @@
 // §Architecture 1). Two clocks (spec §2): a continuous frame update and a
 // decision tick fired on idle / action-complete.
 
-import { ROLL_TEMPERATURE, WALK_SPEED, HEALTH, BUBBLE, OUST, LINE_SUPPRESS_MS } from "../config/tuning.ts";
-import { pickLine } from "../content/bubbles.ts";
+import { ROLL_TEMPERATURE, WALK_SPEED, HEALTH, CONDITION, BUBBLE, OUST, LINE_SUPPRESS_MS, LINE_HISTORY_CAP, NEVER_MS } from "../config/tuning.ts";
 import { ACTIONS, qtier } from "./actions/index.ts";
 import type { ActionCtx, ActionDef } from "./actions/types.ts";
 import { EventBus, type GameEvent } from "./events.ts";
+import { selectLine } from "./dialogue/select.ts";
 import { clamp01, decayNeeds, updateHealthStage } from "./needs.ts";
 import { perceive, distance } from "./perception.ts";
 import { Rng } from "./rng.ts";
@@ -188,12 +188,12 @@ export class Simulation {
 
   private updateCondition(cat: CatState, dt: number): void {
     const days = dt / (60 * 60 * 1000);
-    const starving = cat.needs.hunger < 0.18;
-    const exhausted = cat.needs.energy < 0.15;
+    const starving = cat.needs.hunger < CONDITION.starvingBelow;
+    const exhausted = cat.needs.energy < CONDITION.exhaustedBelow;
     if (starving || exhausted) {
-      cat.condition = Math.max(HEALTH.criticalFloor, cat.condition - days * 3.5);
+      cat.condition = Math.max(HEALTH.criticalFloor, cat.condition - days * CONDITION.drainPerDay);
     } else if (cat.needs.hunger > 0.5 && cat.needs.energy > 0.5) {
-      cat.condition = Math.min(1, cat.condition + days * 2.0); // recover with food+rest
+      cat.condition = Math.min(1, cat.condition + days * CONDITION.recoverPerDay); // recover with food+rest
     }
     const prev = cat.stage;
     updateHealthStage(cat);
@@ -346,8 +346,8 @@ export class Simulation {
       for (const s of supporters) {
         s.memory.push({ subject: defender.id, event: "took the cook's side", charge: -0.15, at: this.world.time });
       }
-      const line = pickLine(defender, "confront_defended", this.world.time, this.rng);
-      if (line) this.speak(defender, line, "speech", undefined, true);
+      const pick = selectLine(defender, "confront_defended", this.world.time, this.rng);
+      if (pick) this.speak(defender, pick.text, "speech", undefined, true, pick.key);
       return;
     }
 
@@ -379,8 +379,8 @@ export class Simulation {
         cook.memory.push({ subject: challenger.id, event: "lost my kitchen fair and square", charge: -0.25, at: this.world.time });
         challenger.memory.push({ subject: "soup-station", event: "won the cook-off", charge: 0.45, at: this.world.time });
       }
-      const line = pickLine(cookWins ? cook : challenger, "cookoff", this.world.time, this.rng);
-      if (line) this.speak(cookWins ? cook : challenger, line, "speech", undefined, true);
+      const pick = selectLine(cookWins ? cook : challenger, "cookoff", this.world.time, this.rng);
+      if (pick) this.speak(cookWins ? cook : challenger, pick.text, "speech", undefined, true, pick.key);
       return;
     }
 
@@ -393,8 +393,8 @@ export class Simulation {
       for (const s of supporters) {
         for (const m of s.memory) if (m.subject === cook.id && m.charge < 0) m.charge *= 0.4;
       }
-      const line = pickLine(cook, "confront_apology", this.world.time, this.rng);
-      if (line) this.speak(cook, line, "speech", undefined, true);
+      const pick = selectLine(cook, "confront_apology", this.world.time, this.rng);
+      if (pick) this.speak(cook, pick.text, "speech", undefined, true, pick.key);
     } else {
       // Branch 3: angry quit / ousted. Stays in village, loses role, grudge
       // toward ringleader, avoids the station (negative memory drives it).
@@ -408,8 +408,8 @@ export class Simulation {
       if (instigator) {
         cook.relationships[instigatorId] = clampRel((cook.relationships[instigatorId] ?? 0) - 0.4);
       }
-      const line = pickLine(cook, "confront_quit", this.world.time, this.rng);
-      if (line) this.speak(cook, line, "speech", undefined, true);
+      const pick = selectLine(cook, "confront_quit", this.world.time, this.rng);
+      if (pick) this.speak(cook, pick.text, "speech", undefined, true, pick.key);
     }
   }
 
@@ -421,25 +421,32 @@ export class Simulation {
     kind: "speech" | "thought" | "reaction" | "gossip",
     icon?: string,
     force = false,
+    suppressKey?: string,
   ): void {
     const now = this.world.time;
     if (!force && kind !== "reaction" && now - cat.lastBubbleAt < BUBBLE.perCatCooldownMs) return;
     if (!force && this.world.bubbles.length >= BUBBLE.maxOnScreen && kind === "thought") return;
     // Duplicate-line suppression across several game days (spec §8): a line
     // said too recently downgrades to a thought icon — intent stays legible.
+    // ONE record per spoken line, committed only now that the bubble really
+    // shows (06-dialogue §3 bugs 2+3) — selection itself is side-effect-free.
     if ((kind === "speech" || kind === "gossip") && text) {
-      const k = `spoke:${text}`;
-      if (now - (cat.lineHistory[k] ?? -1e12) < LINE_SUPPRESS_MS) {
+      const k = suppressKey ?? `spoke:${text}`; // spoke: = freeform action-bubble text
+      if (now - (cat.lineHistory[k] ?? NEVER_MS) < LINE_SUPPRESS_MS) {
         kind = "thought";
         text = "";
       } else {
+        delete cat.lineHistory[k]; // refresh insertion order so cap-eviction stays oldest-first
         cat.lineHistory[k] = now;
+        // keep the history map bounded
+        const keys = Object.keys(cat.lineHistory);
+        if (keys.length > LINE_HISTORY_CAP) delete cat.lineHistory[keys[0]];
       }
     }
     cat.lastBubbleAt = now;
     const ttl = kind === "reaction" ? BUBBLE.reactionHoldMs : BUBBLE.holdMs + BUBBLE.fadeInMs + BUBBLE.fadeOutMs;
     this.world.bubbles.push({ cat: cat.id, text: text || (icon ? `[${icon}]` : "…"), kind, bornAt: now, ttl });
-    if (this.world.bubbles.length > 8) this.world.bubbles.shift();
+    if (this.world.bubbles.length > BUBBLE.queueCap) this.world.bubbles.shift();
     this.bus.emit({ type: "bubble", cat: cat.id, text: text || icon || "", kind });
   }
 
@@ -476,8 +483,8 @@ export class Simulation {
       const say = (catId: string | undefined, category: string, opts?: { force?: boolean; kind?: "speech" | "gossip"; fill?: Record<string, string> }) => {
         const cat = catId ? this.byId(catId) : undefined;
         if (!cat) return;
-        const line = pickLine(cat, category, this.world.time, this.rng, opts?.fill);
-        if (line) this.speak(cat, line, opts?.kind ?? "speech", undefined, opts?.force ?? false);
+        const pick = selectLine(cat, category, this.world.time, this.rng, opts?.fill);
+        if (pick) this.speak(cat, pick.text, opts?.kind ?? "speech", undefined, opts?.force ?? false, pick.key);
       };
       switch (e.type) {
         case "fished":
@@ -595,7 +602,7 @@ export class Simulation {
     for (const c of world.cats) {
       c.lineHistory ??= {};
       c.identity.anchors ??= [];
-      if (typeof c.lastBubbleAt !== "number") c.lastBubbleAt = -1e12; // -Infinity → null in JSON
+      if (typeof c.lastBubbleAt !== "number") c.lastBubbleAt = NEVER_MS; // -Infinity → null in JSON
       const house = world.buildings.find((b) => b.owner === c.id);
       if (house && house.state?.stage == null) house.state = { ...house.state, stage: 2 }; // pre-build-arc saves
     }

@@ -6,8 +6,6 @@ import assert from "node:assert/strict";
 import { Simulation } from "../src/sim/simulation.ts";
 import { createWorld } from "../src/sim/world.ts";
 import { DAY_MS, OUST } from "../src/config/tuning.ts";
-import { pickLine } from "../src/content/bubbles.ts";
-import { Rng } from "../src/sim/rng.ts";
 
 function run(sim: Simulation, ms: number, stepMs = 200): Map<string, number> {
   const counts = new Map<string, number>();
@@ -60,22 +58,23 @@ test("gossip spreads secondhand opinions", () => {
 });
 
 test("bubble lines dedupe within the suppression window", () => {
-  const world = createWorld(19);
-  const cat = world.cats[0];
-  const rng = new Rng(5);
-  const seen = new Set<string>();
-  // Draw the same category repeatedly at the same timestamp: every line must
-  // be unique until the pool exhausts, then silence (undefined).
-  for (let i = 0; i < 30; i++) {
-    const line = pickLine(cat, "fish_miss", 1000, rng);
-    if (line === undefined) break;
-    assert.ok(!seen.has(line), `line repeated within window: ${line}`);
-    seen.add(line);
-  }
-  assert.ok(seen.size >= 3, "pool has variety");
-  assert.equal(pickLine(cat, "fish_miss", 1000, rng), undefined, "exhausted pool goes silent");
+  const sim = new Simulation(createWorld(19));
+  const cat = sim.world.cats[0];
+  const spoken: string[] = [];
+  sim.bus.on("bubble", (e) => {
+    if (e.type === "bubble" && e.cat === cat.id && e.kind === "speech") spoken.push(e.text);
+  });
+  // Fire the same forced category repeatedly at one timestamp. Suppression now
+  // commits at speak time (06-dialogue §3), so we drive the real speak path:
+  // every SHOWN line must be unique until the pool exhausts, then silence.
+  for (let i = 0; i < 30; i++) sim.bus.emit({ type: "collapsed", cat: cat.id, cause: "hunger" });
+  assert.ok(spoken.length >= 3, "pool has variety");
+  assert.equal(new Set(spoken).size, spoken.length, `no line repeated within window (${spoken.join(" / ")})`);
   // After the window passes, lines free up again.
-  assert.ok(pickLine(cat, "fish_miss", 1000 + 4 * DAY_MS, rng) !== undefined, "window expiry frees lines");
+  const before = spoken.length;
+  sim.world.time += 4 * DAY_MS;
+  sim.bus.emit({ type: "collapsed", cat: cat.id, cause: "hunger" });
+  assert.ok(spoken.length > before, "window expiry frees lines");
 });
 
 test("soup ousting: pattern → campaign → confrontation", () => {

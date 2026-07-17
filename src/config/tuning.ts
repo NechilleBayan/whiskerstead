@@ -47,6 +47,7 @@ export const BUBBLE = {
   reactionHoldMs: 2500,
   perCatCooldownMs: 20000,
   maxOnScreen: 3,
+  queueCap: 8, // world.bubbles array bound — oldest is evicted past this
 } as const;
 
 /** Action durations (ms) — pulled straight from the systems spec. */
@@ -93,6 +94,16 @@ export const HEALTH = {
   postRescueCondition: 0.5,
 } as const;
 
+/** Condition drain bands (spec §9): hunger/energy satisfaction levels that
+ *  count as starving/exhausted, plus per-game-day drain/recovery rates. The
+ *  dialogue layer reads the same bands (06-dialogue §3). */
+export const CONDITION = {
+  starvingBelow: 0.18,
+  exhaustedBelow: 0.15,
+  drainPerDay: 3.5,
+  recoverPerDay: 2.0,
+} as const;
+
 /** Relationship label thresholds (pairwise drift value, -1..1). Spec §10. */
 export const REL_THRESHOLDS = {
   friend: 0.4,
@@ -123,6 +134,12 @@ export const OUST = {
 
 /** Bubble line duplicate suppression window (several game days, spec §8). */
 export const LINE_SUPPRESS_MS = 3 * DAY_MS;
+
+/** Per-cat lineHistory map bound — oldest suppression record evicted past this. */
+export const LINE_HISTORY_CAP = 120;
+
+/** "Never happened" timestamp sentinel — JSON-safe stand-in for -Infinity. */
+export const NEVER_MS = -1e12;
 
 /** Trees & wood — the renewable wood economy. All costs live here, never in
  *  building/campfire logic. */

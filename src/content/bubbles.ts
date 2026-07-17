@@ -3,7 +3,7 @@
 // same line ≤ once per several game days (LINE_SUPPRESS_MS), tracked per cat.
 // Expand these tables from playtest gaps — data only, no code changes needed.
 
-import { LINE_SUPPRESS_MS } from "../config/tuning.ts";
+import { selectLine } from "../sim/dialogue/select.ts";
 import type { Rng } from "../sim/rng.ts";
 import type { CatState, PersonalityId } from "../sim/types.ts";
 
@@ -144,7 +144,9 @@ export const LINES: Record<string, LineTable> = {
   },
 };
 
-/** Pick a line for a cat, honoring per-cat duplicate suppression. Returns
+/** Pick a line for a cat, honoring per-cat duplicate suppression. Thin adapter
+ *  over the pure selector in sim/dialogue — no history commit here; speak()
+ *  commits only when the bubble actually shows (06-dialogue §3). Returns
  *  undefined if every candidate was used too recently (silence is fine). */
 export function pickLine(
   cat: CatState,
@@ -153,20 +155,5 @@ export function pickLine(
   rng: Rng,
   fill?: Record<string, string>,
 ): string | undefined {
-  const table = LINES[category];
-  if (!table) return undefined;
-  const pool = [...(table[cat.identity.personality] ?? []), ...(table.any ?? [])];
-  const fresh = pool.filter((l) => now - (cat.lineHistory[key(category, l)] ?? -Infinity) >= LINE_SUPPRESS_MS);
-  if (fresh.length === 0) return undefined;
-  let line = fresh[Math.floor(rng.next() * fresh.length)];
-  cat.lineHistory[key(category, line)] = now;
-  // keep the history map bounded
-  const keys = Object.keys(cat.lineHistory);
-  if (keys.length > 120) delete cat.lineHistory[keys[0]];
-  if (fill) for (const [k, v] of Object.entries(fill)) line = line.replaceAll(`{${k}}`, v);
-  return line;
-}
-
-function key(category: string, line: string): string {
-  return `${category}:${line}`;
+  return selectLine(cat, category, now, rng, fill)?.text;
 }

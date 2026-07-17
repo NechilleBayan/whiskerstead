@@ -3,7 +3,7 @@
 // (spawn build-arc) but MVP begins with houses present so life is legible fast.
 
 import { ROSTER, makeIdentity } from "../content/cats.ts";
-import { NEED_IDS } from "../config/tuning.ts";
+import { NEED_IDS, NEVER_MS } from "../config/tuning.ts";
 import { spawnForest } from "./trees.ts";
 import type { Building, CatState, Site, WorldState } from "./types.ts";
 
@@ -68,7 +68,7 @@ export function createWorld(seed = 1337): WorldState {
       grabbed: false,
       facing: 1,
       emotion: "neutral",
-      lastBubbleAt: -1e12, // serializable stand-in for -Infinity
+      lastBubbleAt: NEVER_MS, // serializable stand-in for -Infinity
       lineHistory: {},
     };
     return cat;
