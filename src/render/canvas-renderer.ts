@@ -9,6 +9,34 @@ import type { Building, CatState, WorldState } from "../sim/types.ts";
 const TREE_GROW_MS = TREES.growMs;
 const TREE_REGROW_MS = TREES.regrowMs;
 
+// Hand-drawn cat sprites (Vite resolves these URLs at build time). Keyed by
+// `<name>_<view>` e.g. "biscuit_front". Only the neutral emotion exists so far;
+// sleeping/collapsed keep their doodle poses (distinct silhouettes, no sprite).
+const CAT_SPRITE_URLS = import.meta.glob("../../assets/cats/2x/cat_*_neutral.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+// Sprite footprint in world units. Feet sit on SPRITE_BASELINE so the sprite
+// grounds where the old doodle's legs did; height/width are squished per-frame.
+const SPRITE_H = 56;
+const SPRITE_BASELINE = 18;
+const SQUISH = 0.16; // bouncy — max ±16% on each axis while walking
+const FACE_FLIP = 0.1; // smoothed horizontal speed needed to turn the sprite
+const STOP_HOLD = 18; // frames a cat must be fully stopped before it faces front
+
+interface CatAnim {
+  px: number; // last-seen world position (for per-frame movement detection)
+  py: number;
+  phase: number; // squash-stretch oscillator, advances with travel speed
+  amp: number; // 0 idle → 1 moving, eased so the squish fades in/out
+  dir: number; // displayed facing (-1 left, 1 right), smoothed off the sim's
+  vx: number; // low-passed horizontal velocity feeding the facing hysteresis
+  view: "front" | "tqfront"; // 3/4 while travelling, front only at a full stop
+  still: number; // frames since last movement; gates the return to the front view
+}
+
 const PALETTE = {
   grass: "#c3d6b4",
   grassAlt: "#b7cca7",
@@ -24,13 +52,26 @@ export class CanvasRenderer {
   private scale = 1;
   private offX = 0;
   private offY = 0;
+  private catSprites = new Map<string, HTMLImageElement>();
+  private catAnim = new Map<string, CatAnim>();
 
   constructor(private canvas: HTMLCanvasElement) {
     const c = canvas.getContext("2d");
     if (!c) throw new Error("no 2d context");
     this.ctx = c;
+    this.loadCatSprites();
     this.resize();
     window.addEventListener("resize", () => this.resize());
+  }
+
+  private loadCatSprites(): void {
+    for (const [path, url] of Object.entries(CAT_SPRITE_URLS)) {
+      const m = path.match(/cat_([a-z]+)_([a-z]+)_neutral\.png$/);
+      if (!m) continue;
+      const img = new Image();
+      img.src = url;
+      this.catSprites.set(`${m[1]}_${m[2]}`, img); // e.g. "biscuit_front"
+    }
   }
 
   resize(): void {
@@ -278,15 +319,49 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
+  /** Per-frame movement → squash-stretch state. Detects motion from the
+   *  world-position delta between renders (covers walking, wandering, chasing),
+   *  ignoring drag/teleport jumps so a fling doesn't spasm. */
+  private updateCatAnim(cat: CatState, x: number, y: number): CatAnim {
+    let a = this.catAnim.get(cat.id);
+    if (!a) {
+      a = { px: x, py: y, phase: 0, amp: 0, dir: cat.facing < 0 ? -1 : 1, vx: 0, view: "front", still: STOP_HOLD };
+      this.catAnim.set(cat.id, a);
+    }
+    const dx = x - a.px;
+    let speed = Math.hypot(dx, y - a.py);
+    if (speed > 8) speed = 0; // drag/teleport — not a gait
+    const moving = speed > 0.06 && !cat.grabbed && cat.stage !== "collapsed";
+    a.phase += Math.min(speed, 2.5) * 0.9; // faster travel → quicker bounce
+    a.amp += ((moving ? 1 : 0) - a.amp) * 0.18; // ease the squish in and out
+    // View: the sim only nudges position once per tick, so `amp` dips between
+    // ticks — thresholding it flickers front/side mid-walk. Instead latch to the
+    // 3/4 view on any movement and only fall back to front after a real stop
+    // (no movement for STOP_HOLD frames, which bridges the tick gaps).
+    if (speed > 0.02) a.still = 0;
+    else if (a.still < STOP_HOLD) a.still++;
+    a.view = a.still >= STOP_HOLD ? "front" : "tqfront";
+    // Facing: the sim rewrites cat.facing from the raw dx sign every tick, which
+    // ping-pongs as a cat wanders. Low-pass the horizontal velocity and only
+    // turn past a deadzone so the sprite commits to a direction instead of
+    // twitching. (speed === 0 means a teleport/drag frame — skip it.)
+    if (speed > 0) a.vx = a.vx * 0.82 + dx * 0.18;
+    if (a.vx > FACE_FLIP) a.dir = 1;
+    else if (a.vx < -FACE_FLIP) a.dir = -1;
+    a.px = x;
+    a.py = y;
+    return a;
+  }
+
   // ---------- cats ----------
   private drawCat(cat: CatState, world: WorldState): void {
     const ctx = this.ctx;
     const { x, y } = cat.pos;
     const focusFade = world.bubbles; // no-op ref
     void focusFade;
+    const anim = this.updateCatAnim(cat, x, y);
     ctx.save();
     ctx.translate(x, y);
-    ctx.scale(cat.facing, 1);
 
     const collapsed = cat.stage === "collapsed";
     const sleeping = cat.action?.id === "sleep" && cat.action.phase === "perform";
@@ -304,33 +379,52 @@ export class CanvasRenderer {
       ctx.font = "9px sans-serif";
       ctx.fillText("z", 12, -14);
     } else {
-      // bipedal body
       const strained = cat.stage === "strained" || cat.stage === "critical";
-      const droop = strained ? 4 : 0;
-      // legs
-      ctx.strokeStyle = PALETTE.ink;
-      ctx.beginPath();
-      ctx.moveTo(-5, 6 + droop);
-      ctx.lineTo(-5, 16 + droop);
-      ctx.moveTo(5, 6 + droop);
-      ctx.lineTo(5, 16 + droop);
-      ctx.stroke();
-      // torso
-      this.wobbleEllipse(0, -2 + droop, 12, 15, cat.identity.color);
-      // head
-      this.wobbleEllipse(0, -20 + droop, 11, 10, cat.identity.color);
-      // ears
-      ctx.fillStyle = cat.identity.color;
-      this.wobbleTriangle2(-8, -28 + droop, -3, -30 + droop, -5, -22 + droop);
-      this.wobbleTriangle2(8, -28 + droop, 3, -30 + droop, 5, -22 + droop);
-      // identifying accent blotch
-      ctx.fillStyle = cat.identity.accent;
-      this.dot(4, -4 + droop, 3, cat.identity.accent);
-      // face
-      this.eyes(cat.emotion, droop);
-      // carried item
-      const item = cat.inventory[0];
-      if (item) this.drawItemIcon(item.type, 12, 0 + droop, true);
+      // 3/4-front while travelling, front only after a full stop (see updateCatAnim).
+      const img = this.catSprites.get(`${cat.id}_${anim.view}`) ?? this.catSprites.get(`${cat.id}_front`);
+      if (img && img.complete && img.naturalWidth > 0) {
+        // Squash-and-stretch: widen as it flattens, anchored at the feet so it
+        // reads as a grounded bounce. Amplitude is only nonzero while walking.
+        const wob = SQUISH * anim.amp * Math.sin(anim.phase);
+        const h = SPRITE_H * (1 - wob) * (strained ? 0.94 : 1);
+        const w = SPRITE_H * (1 + wob);
+        const baseline = SPRITE_BASELINE + (strained ? 3 : 0);
+        // Art is drawn facing LEFT: mirror it (scaleX -1) to face right when the
+        // smoothed direction is rightward (dir 1). dir -1 keeps the native art.
+        ctx.save();
+        ctx.scale(-anim.dir, 1);
+        ctx.drawImage(img, -w / 2, baseline - h, w, h);
+        ctx.restore();
+        const item = cat.inventory[0];
+        if (item) this.drawItemIcon(item.type, 12, baseline - 22, true);
+      } else {
+        // Doodle fallback — sprite still decoding, or a name with no art yet.
+        const droop = strained ? 4 : 0;
+        // legs
+        ctx.strokeStyle = PALETTE.ink;
+        ctx.beginPath();
+        ctx.moveTo(-5, 6 + droop);
+        ctx.lineTo(-5, 16 + droop);
+        ctx.moveTo(5, 6 + droop);
+        ctx.lineTo(5, 16 + droop);
+        ctx.stroke();
+        // torso
+        this.wobbleEllipse(0, -2 + droop, 12, 15, cat.identity.color);
+        // head
+        this.wobbleEllipse(0, -20 + droop, 11, 10, cat.identity.color);
+        // ears
+        ctx.fillStyle = cat.identity.color;
+        this.wobbleTriangle2(-8, -28 + droop, -3, -30 + droop, -5, -22 + droop);
+        this.wobbleTriangle2(8, -28 + droop, 3, -30 + droop, 5, -22 + droop);
+        // identifying accent blotch
+        ctx.fillStyle = cat.identity.accent;
+        this.dot(4, -4 + droop, 3, cat.identity.accent);
+        // face
+        this.eyes(cat.emotion, droop);
+        // carried item
+        const item = cat.inventory[0];
+        if (item) this.drawItemIcon(item.type, 12, 0 + droop, true);
+      }
     }
     ctx.restore();
 
