@@ -1,0 +1,140 @@
+=============================================================================
+ WHISKERSTEAD — BATCH 4 IMAGE-GENERATION PROMPTS           [PROJECT-TRACKED]
+ Added to project: 2026-07-20 · lives in assets/ · first batch of the
+ ONE-IMAGE model (ASSET-CHECKLIST.txt v2).
+ Produces the 4 checklist P1 files — the reusable composition kit:
+     layer_fire.png · layer_woodpile.png · env_tree.png · env_stump.png
+ via 5 prompts: fire+woodpile are DECOMPOSED from one approved bonfire
+ image, and the stump is DERIVED from the approved tree (SPRITE-SPEC-
+ REFERENCE.txt §11a: layers cut from one picture cannot misalign).
+ ENGINE NOTE: CODE — the renderer has no image loader for world art yet
+ (everything non-cat is drawn procedurally). Wiring is render-only, its
+ own go-ahead. Generate freely meanwhile.
+=============================================================================
+
+HOW TO USE
+ - Run in order. Prompts 2, 3, and 5 are EDIT prompts: they attach a
+   previously APPROVED output, so lock in prompt 1 before 2–3, and
+   prompt 4 before 5.
+ - Prompt 1's output (bonfire_combined_reference.png) is a WORKING file:
+   keep it in assets/ as the registration reference, but it is NOT a game
+   asset and is never imported — the game composes lit bonfires from the
+   two split layers.
+ - Style anchor for prompts 1 and 4: also attach
+   assets/cats/2x/cat_biscuit_front_neutral.png as a STYLE-ONLY reference
+   (line quality, flat fills, palette warmth). Say nothing about cats in
+   the output — it anchors the look, not the content.
+ - After generating: verify (SPRITE-SPEC-REFERENCE.txt §11 + §11a), export
+   256x256 to a new assets/world/2x/ and 128x128 to assets/world/1x/ under
+   the exact filename, flip the checklist row to [ADDED].
+
+-----------------------------------------------------------------------------
+ PROMPT 1 — bonfire_combined_reference.png   (working file, not imported)
+   [attach: cat_biscuit_front_neutral.png as style-only reference]
+-----------------------------------------------------------------------------
+Game environment sprite for a cozy hand-drawn doodle village sim. Match
+the art style of the attached character sprite exactly — uneven warm
+dark-brown hand-inked outline (2–4 px, weight varying mid-stroke), flat
+slightly-desaturated fills, no gradients, no realistic shading, charming
+wobbly hand-drawn shapes — but do NOT include the cat or any character.
+
+Subject: a small lit bonfire. A low pile of 4–6 crossed logs (warm wood
+browns #b9946a and #8a6a44, simple doodle logs with visible end rings)
+with one cozy flame burning on top (rounded teardrop flame, main body
+warm orange #f0a04b with a smaller inner tongue in soft yellow #f6c65a,
+drawn with the same inked outline).
+
+Layout and registration (critical — this image will be split into two
+game layers): canvas 256 x 256 px, PNG RGBA, fully transparent
+background. The log pile is anchored bottom-center, its base at 90% of
+canvas height; the pile occupies the lower third of the canvas; the TOP
+surface of the pile sits at 60% of canvas height. The flame's base sits
+EXACTLY on that 60% line, centered; the flame tip reaches no higher than
+15% from the canvas top (empty headroom above — the game bounces the
+flame upward). Flame and logs must overlap ONLY at the flame base /
+pile top so they separate cleanly.
+
+No scenery, no ground, no grass, no smoke, no sparks, no stones circle,
+no text, no watermark, no shadow, no border, clean alpha edges. One
+bonfire only, centered.
+
+-----------------------------------------------------------------------------
+ PROMPT 2 — layer_woodpile.png     (EDIT — attach approved PROMPT 1 output)
+-----------------------------------------------------------------------------
+Edit the attached image: REMOVE the flame entirely, leaving only the log
+pile. The logs must remain PIXEL-IDENTICAL — same position on canvas,
+same size, same outlines, same colors, untouched — including completing
+any log edges that were hidden behind the flame base, redrawn in the
+same doodle style. Everything above the pile becomes fully transparent.
+Canvas stays 256 x 256 px, PNG RGBA, transparent background, no other
+changes, no additions, clean alpha edges.
+(This is the unlit bonfire, the house materials pile, and the base the
+game draws the fire layer onto — its top surface must stay at the 60%
+line.)
+
+-----------------------------------------------------------------------------
+ PROMPT 3 — layer_fire.png         (EDIT — attach approved PROMPT 1 output)
+-----------------------------------------------------------------------------
+Edit the attached image: KEEP ONLY the flame and erase everything else
+(all logs fully removed, fully transparent). The flame must remain
+PIXEL-IDENTICAL — same position on canvas, same size, same outline and
+colors — including completing the flame's bottom edge where it met the
+logs, closed off in the same doodle style so the flame is a whole shape.
+Canvas stays 256 x 256 px, PNG RGBA, transparent background, no other
+changes, clean alpha edges.
+(The game overlays this at (0,0) on layer_woodpile and squish-bounces it
+for flicker — it is also reused under the soup pot — so the flame base
+must stay exactly on the 60% line and the headroom above must stay
+empty.)
+
+-----------------------------------------------------------------------------
+ PROMPT 4 — env_tree.png
+   [attach: cat_biscuit_front_neutral.png as style-only reference]
+-----------------------------------------------------------------------------
+Game environment sprite for a cozy hand-drawn doodle village sim. Match
+the art style of the attached character sprite exactly — uneven warm
+dark-brown hand-inked outline, flat slightly-desaturated fills, no
+gradients, no shading beyond at most one flat tone — but do NOT include
+the cat or any character.
+
+Subject: ONE simple doodle tree, the game's only tree (code creates all
+variety by flipping, leaning, scaling, and hue-shifting this single
+image). A slightly crooked trunk in warm brown #8a6a44 with a single
+soft rounded cloud-like canopy in sage green #7fa25e — one friendly
+blob canopy, gently lumpy outline, no individual leaves, no branches
+visible outside the canopy, no fruit.
+
+Layout and registration: canvas 256 x 256 px, PNG RGBA, fully
+transparent background. Trunk base anchored bottom-center at 90% of
+canvas height (the ground line); tree total height ~200 px; canopy
+centered over the trunk, roughly symmetrical (it will be mirrored in
+code and must read the same flipped); ~10% margin on all sides, nothing
+touching canvas edges.
+
+No ground, no grass, no roots spreading wide, no scenery, no text, no
+watermark, no shadow, no border, clean alpha edges. One tree only.
+
+-----------------------------------------------------------------------------
+ PROMPT 5 — env_stump.png          (EDIT — attach approved PROMPT 4 output)
+-----------------------------------------------------------------------------
+Edit the attached tree image: the tree has been chopped down. Replace it
+with ONLY a short stump — the bottom of the SAME trunk, same thickness,
+same position on canvas, same warm brown #8a6a44 and identical doodle
+outline style — about 30 px tall, cut flat on top, with 2–3 simple
+hand-drawn tree rings visible on the pale cut surface (light wood
+#c7a97e). Everything else (upper trunk, canopy) fully erased to
+transparency.
+Canvas stays 256 x 256 px, PNG RGBA, transparent background; the stump
+base remains exactly where the trunk base was, on the 90% ground line
+(the game swaps tree → stump in place with no offset). No wood chips, no
+axe, no scenery, no text, no shadow, clean alpha edges.
+
+=============================================================================
+ AFTER BATCH 4: flip the 4 P1 rows in ASSET-CHECKLIST.txt to [ADDED] and
+ keep bonfire_combined_reference.png in assets/ as the registration
+ reference. Wiring go-ahead (render-only) makes them live: a generic
+ world-image loader + draw-swaps in canvas-renderer.ts (bonfire = pile +
+ bounced fire; tree/stump swap; fire reuse under the soup pot when P2's
+ station lands).
+ Batch 5 = P2 buildings (8 files, decompose pattern where layered).
+=============================================================================

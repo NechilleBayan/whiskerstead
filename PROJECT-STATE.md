@@ -95,6 +95,33 @@ Known issues). Do not start M5 without the user's go-ahead.
    Deferred from M4 (own go-ahead): cross-tick delayed replies, reconcile reply
    from the other cat, rumor re-propagation, raising campfireTalkChance.
 
+7. **Universal action animation** — spec `files/10-universal-action-anim-spec.md`
+   DRAFT (2026-07-20), awaiting approval. Wiggle (perform-phase, procedural +
+   sprite hook) + done beat (render-only, `YIELD_EVENTS`), then a small helper-
+   dedup cleanup. Sim untouched in steps 1–2. User decisions locked in spec §0;
+   real "retrieve" sim phase explicitly deferred (spec §6).
+   Asset pipeline (2026-07-20, v2 SIMPLIFIED): user locked a ONE-IMAGE
+   model — one image per distinct thing; animation = code transforms (like
+   the walk squish), quantity = stacked draws, state = composed layers
+   (bonfire = woodpile + bouncing fire layer), variants = code
+   flip/lean/tint. `assets/ASSET-CHECKLIST.txt` (v2, 26 required images;
+   cats P0 = DONE, no new cat art ever — sleep/collapsed/emotions/wiggle
+   all procedural). Detailed 146-name list archived as
+   `ASSET-CHECKLIST-DETAILED.txt`; BATCH-1/2/3-PROMPTS.txt CANCELLED
+   (banner added — cat art dropped). Anim spec §1.2 sprite hook dropped
+   accordingly (simplifies step 1). `assets/SPRITE-SPEC-REFERENCE.txt`
+   still canonical for style/canvas/naming (§11a layer registration added).
+   `assets/BATCH-4-PROMPTS.txt`: P1 layer kit (fire/woodpile/tree/stump)
+   via 5 prompts — fire+woodpile decomposed from one bonfire image, stump
+   derived from the tree. `assets/BATCH-5-PROMPTS.txt`: P2 buildings
+   (8 prompts, registration lines for code-composed states; market/forage
+   drawn EMPTY, house in tintable pale neutral). `assets/BATCH-6-PROMPTS.txt`:
+   P3 items (12 prompts — completes the 26-image required set; P4 ground
+   optional). Prompt authoring method codified in
+   `assets/PROMPT-AUTHORING-GUIDE.txt`, referenced from CLAUDE.md — future
+   asset-prompt requests follow it. Canvas follows the shipped pipeline
+   (256/128), not files/01-cats.md's older 192 note.
+
 ## Reference assets
 - `files/whiskerstead_village_grid_map.png` + `_instructions.md` — positioning
   source of truth for background art & placement prompts. All 15 anchors

@@ -1,0 +1,350 @@
+>>> CANCELLED 2026-07-20 — cat art beyond the shipped neutrals was dropped (one-image model: all cat states are now code transforms). Do not generate. See ASSET-CHECKLIST.txt. <<<
+=============================================================================
+ WHISKERSTEAD — BATCH 2 IMAGE-GENERATION PROMPTS           [PROJECT-TRACKED]
+ Added to project: 2026-07-20 · lives in assets/
+ 16 assets (checklist P2): master palette sheet, then sleep_a + sleep_b +
+ collapsed for all 5 cats.
+ ENGINE NOTE: unlike batch 1, these need a small renderer change before
+ they show in-game (sleep/collapsed currently use doodle fallbacks and the
+ loader only globs _neutral + wiggle). Generate freely — wiring is a small,
+ separate go-ahead.
+=============================================================================
+
+HOW TO USE
+ - One prompt = one image. Do the palette sheet first, then finish each
+   cat's three poses before moving to the next cat.
+ - ATTACH the listed reference image(s). sleep_b attaches your accepted
+   sleep_a; collapsed attaches the neutral (and sleep_a, to contrast
+   against — collapsed must NOT look like sleep).
+ - Verify against SPRITE-SPEC-REFERENCE.txt §11, export 256x256 to
+   assets/cats/2x/ and 128x128 to /1x/ (palette sheet: keep only in
+   assets/, it is a reference tool, not a game asset), then flip the rows
+   to [ADDED] in ASSET-CHECKLIST.txt.
+
+DESIGN RULES FOR THIS BATCH (from files/01-cats.md + the design spec)
+ - sleep_a/b: curled-up cozy ball, eyes closed. The two frames are a
+   "boiling line" pair: SAME pose redrawn with a subtle breathing change,
+   cycled slowly in-game.
+ - collapsed: a hard design requirement says this must NEVER read as
+   sleep. Splayed on its back/side, limbs out, eyes OPEN as small dazed
+   dots, ears flat. Different silhouette from the sleep ball at 64 px.
+ - Lying poses still anchor bottom-center: the body rests ON the same
+   ground line where the standing cat's feet sit. No floating.
+
+-----------------------------------------------------------------------------
+ PROMPT 1 — palette_master_sheet.png
+   [references: ALL FIVE cat_<name>_front_neutral.png, attached together]
+-----------------------------------------------------------------------------
+Reference asset (not a game sprite): a master color palette swatch sheet
+for a cozy hand-drawn doodle village game. Using the five attached cat
+sprites as the source of truth for style and color temperature, produce a
+single sheet of 18–24 rounded, hand-drawn swatch blobs (uneven wobbly
+outlines, warm dark-brown ink, flat fills, no gradients) arranged in a
+loose grid on a fully transparent background.
+
+Swatches to include: the five cat body/accent colors (#e8a24a, #c67d24,
+#9aa79a, #6f7d70, #3b3a42, #6b6a75, #f2efe6, #2c2a33, #8a6a44, #5f472c);
+world colors — grass #c3d6b4 and #b7cca7, water #a9cbe0, wood #b9946a,
+cream #f6f0e2, fire #f0a04b, outline ink #4a3f36; 2–4 additional soft
+pastel companions (dusty pink, muted blue, sage) harmonized with the
+above; and exactly ONE pale violet (#b79fd6) set slightly apart — the
+reserved cult accent. Slightly desaturated, medium contrast, cozy warm
+storybook feel throughout.
+
+Canvas 1024 x 1024 px, PNG RGBA, transparent background. No text or hex
+labels (they render unreliably — the hexes live in SPRITE-SPEC-
+REFERENCE.txt), no scenery, no characters, no watermark, no gradients.
+
+-----------------------------------------------------------------------------
+ PROMPT 2 — cat_biscuit_sleep_a.png     [reference: cat_biscuit_front_neutral.png]
+-----------------------------------------------------------------------------
+Character sprite, sleep pose, for a cozy village sim game. Use the attached
+image as the exact character and style reference: Biscuit, a chunky
+pear-shaped orange tabby doodle-cat (body #e8a24a, darker tabby stripes
+#c67d24, cream muzzle, uneven warm dark-brown hand-inked outline, flat
+colors, no shading, no gradients). Keep markings, palette, line weight, and
+scale IDENTICAL to the reference — change only the pose.
+
+Pose: curled up asleep in a cozy round ball, lying on its side with head
+tucked toward the viewer's left, tail wrapped around the body, ears
+relaxed, eyes drawn as closed curved lines, content peaceful expression.
+Compact round silhouette — clearly a happy nap. The body rests directly on
+the same ground line where the standing reference's feet sit (anchor
+bottom-center, no floating).
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, subject
+occupying roughly the lower half of the canvas width-wise (~120–160 px
+wide), ~10% margin, anchored bottom-center. No "zzz" text, no props, no
+bed, no scenery, no shadow, no border, clean alpha edges. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 3 — cat_biscuit_sleep_b.png
+              [references: cat_biscuit_front_neutral.png + your sleep_a]
+-----------------------------------------------------------------------------
+Character sprite, sleep pose, breathing frame. This is the second frame of
+a 2-frame "boiling line" sleep loop for the attached sleep_a. Redraw the
+EXACT same curled-up sleeping Biscuit — same position on canvas, same
+ground line, same tail wrap, same markings — with only a subtle breathing
+difference: the body very slightly fuller/risen (a gentle inhale), the
+hand-drawn linework naturally re-traced so lines wobble a little
+differently. Nothing else changes: when the two frames alternate slowly,
+the cat should simply appear to breathe, with no jumping or sliding.
+
+Canvas 256 x 256 px, PNG RGBA, transparent background, anchored
+bottom-center on the identical baseline as sleep_a. No text, no props, no
+shadow, clean alpha. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 4 — cat_biscuit_collapsed.png
+              [references: cat_biscuit_front_neutral.png + your sleep_a]
+-----------------------------------------------------------------------------
+Character sprite, collapsed/exhausted state, for a cozy village sim game.
+Same character and style as the attached Biscuit references (chunky orange
+tabby doodle-cat, flat colors, uneven warm dark-brown outline). Keep
+markings, palette, line weight, and scale IDENTICAL.
+
+Pose — IMPORTANT: this is a distress state and must NOT resemble the
+attached sleeping pose. Biscuit has collapsed from exhaustion: splayed
+flat, belly-up or flopped on its side with all four limbs sticking
+outward, tail flat and limp, ears drooped flat, and eyes OPEN as tiny
+dazed dots (not closed — awake but done). Slightly comical, storybook
+"worn out", never gruesome. Wide flat splayed silhouette, clearly
+different from the curled sleep ball even at 64 px. Body rests on the
+same ground line as the reference's feet (anchor bottom-center).
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, ~10% margin.
+No swirl/X eyes, no injuries, no text, no props, no scenery, no shadow,
+clean alpha edges. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 5 — cat_moss_sleep_a.png           [reference: cat_moss_front_neutral.png]
+-----------------------------------------------------------------------------
+Character sprite, sleep pose, for a cozy village sim game. Use the attached
+image as the exact character and style reference: Moss, a soft round grey
+longhair doodle-cat (body #9aa79a, darker accents #6f7d70, fluffy chest,
+uneven warm dark-brown hand-inked outline, flat colors, no shading). Keep
+markings, palette, line weight, and scale IDENTICAL — change only the pose.
+
+Pose: curled up asleep in a cozy round ball on its side, head tucked to
+the viewer's left, fluffy tail wrapped over the nose, ears relaxed, eyes
+closed curved lines, deeply content. The long fur softens the ball
+silhouette. Body rests on the same ground line as the standing
+reference's feet (anchor bottom-center, no floating).
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, subject
+~120–160 px wide, ~10% margin, anchored bottom-center. No "zzz" text, no
+props, no scenery, no shadow, clean alpha edges. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 6 — cat_moss_sleep_b.png
+              [references: cat_moss_front_neutral.png + your sleep_a]
+-----------------------------------------------------------------------------
+Character sprite, sleep pose, breathing frame — second frame of a 2-frame
+"boiling line" loop for the attached sleep_a. Redraw the EXACT same
+curled sleeping Moss — same canvas position, ground line, tail-over-nose,
+markings — with only a subtle inhale: body a touch fuller, fluffy fur
+edges re-traced with naturally different wobble. Alternating the frames
+should read as slow breathing with no jump or slide.
+
+Canvas 256 x 256 px, PNG RGBA, transparent background, anchored
+bottom-center on the identical baseline as sleep_a. No text, no props, no
+shadow, clean alpha. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 7 — cat_moss_collapsed.png
+              [references: cat_moss_front_neutral.png + your sleep_a]
+-----------------------------------------------------------------------------
+Character sprite, collapsed/exhausted state. Same character and style as
+the attached Moss references (round grey longhair doodle-cat, flat colors,
+uneven warm dark-brown outline). Keep markings, palette, line weight, and
+scale IDENTICAL.
+
+Pose — must NOT resemble the attached sleeping pose: Moss has collapsed
+from exhaustion, splayed flat on its side/belly-up, all four limbs out,
+long fur flattened and mussed, tail limp, ears flat, eyes OPEN as tiny
+dazed dots. Slightly comical storybook "completely worn out", never
+gruesome. Wide flat silhouette, clearly distinct from the sleep ball at
+64 px. Body on the same ground line as the reference's feet.
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, ~10% margin,
+anchored bottom-center. No swirl/X eyes, no injuries, no text, no props,
+no shadow, clean alpha edges. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 8 — cat_pepper_sleep_a.png       [reference: cat_pepper_front_neutral.png]
+-----------------------------------------------------------------------------
+Character sprite, sleep pose, for a cozy village sim game. Use the
+attached image as the exact character and style reference: Pepper, a wiry
+black doodle-cat (body #3b3a42, soft slate highlights #6b6a75, uneven warm
+dark-brown hand-inked outline, flat colors, no shading). Keep markings,
+palette, line weight, and scale IDENTICAL — change only the pose.
+
+Pose: curled asleep in a ball on its side, head to the viewer's left,
+tail wrapped around, ears relaxed, eyes closed curved lines — though even
+asleep Pepper keeps a hint of restlessness: one ear half-perked or a paw
+sticking slightly out of the ball. Compact round silhouette overall. Body
+rests on the same ground line as the standing reference's feet (anchor
+bottom-center).
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, subject
+~120–160 px wide, ~10% margin, anchored bottom-center. No "zzz" text, no
+props, no scenery, no shadow, clean alpha edges. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 9 — cat_pepper_sleep_b.png
+              [references: cat_pepper_front_neutral.png + your sleep_a]
+-----------------------------------------------------------------------------
+Character sprite, sleep pose, breathing frame — second frame of a 2-frame
+"boiling line" loop for the attached sleep_a. Redraw the EXACT same curled
+sleeping Pepper — same canvas position, ground line, ear and paw details,
+markings — with only a subtle inhale: body slightly fuller, linework
+re-traced with naturally different wobble. The alternating pair should
+read as slow breathing, no jump or slide.
+
+Canvas 256 x 256 px, PNG RGBA, transparent background, anchored
+bottom-center on the identical baseline as sleep_a. No text, no props, no
+shadow, clean alpha. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 10 — cat_pepper_collapsed.png
+              [references: cat_pepper_front_neutral.png + your sleep_a]
+-----------------------------------------------------------------------------
+Character sprite, collapsed/exhausted state. Same character and style as
+the attached Pepper references (wiry black doodle-cat, flat colors, uneven
+warm dark-brown outline). Keep markings, palette, line weight, and scale
+IDENTICAL.
+
+Pose — must NOT resemble the attached sleeping pose: Pepper has crashed
+mid-adventure, splayed belly-up with all four limbs pointing outward,
+tail flat, ears flat, eyes OPEN as tiny dazed dots. The usual spring is
+completely gone — that contrast IS the read. Slightly comical, storybook
+"overdid it", never gruesome. Wide flat splayed silhouette, distinct from
+the sleep ball at 64 px. Body on the same ground line as the reference's
+feet.
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, ~10% margin,
+anchored bottom-center. No swirl/X eyes, no injuries, no text, no props,
+no shadow, clean alpha edges. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 11 — cat_ink_sleep_a.png            [reference: cat_ink_front_neutral.png]
+-----------------------------------------------------------------------------
+Character sprite, sleep pose, for a cozy village sim game. Use the
+attached image as the exact character and style reference: Ink, a white
+doodle-cat with dark ink-blot patches (body #f2efe6, near-black blotches
+#2c2a33, uneven warm dark-brown hand-inked outline, flat colors, no
+shading). Keep the EXACT blotch placement, palette, line weight, and scale
+IDENTICAL — change only the pose.
+
+Pose: curled asleep in a neat, composed ball on its side — even sleeping,
+Ink is tidy: tail wrapped precisely around the body, head tucked to the
+viewer's left, ears relaxed, eyes closed curved lines. The ink blotches
+stay in their original body positions as the body curls. Body rests on
+the same ground line as the standing reference's feet (anchor
+bottom-center).
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, subject
+~120–160 px wide, ~10% margin, anchored bottom-center. No "zzz" text, no
+props, no scenery, no shadow, clean alpha edges. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 12 — cat_ink_sleep_b.png
+              [references: cat_ink_front_neutral.png + your sleep_a]
+-----------------------------------------------------------------------------
+Character sprite, sleep pose, breathing frame — second frame of a 2-frame
+"boiling line" loop for the attached sleep_a. Redraw the EXACT same
+curled sleeping Ink — same canvas position, ground line, precise tail
+wrap, blotches in identical places — with only a subtle inhale: body
+slightly fuller, linework re-traced with naturally different wobble. The
+alternating pair should read as slow breathing, no jump or slide, and the
+blotches must not drift between frames.
+
+Canvas 256 x 256 px, PNG RGBA, transparent background, anchored
+bottom-center on the identical baseline as sleep_a. No text, no props, no
+shadow, clean alpha. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 13 — cat_ink_collapsed.png
+              [references: cat_ink_front_neutral.png + your sleep_a]
+-----------------------------------------------------------------------------
+Character sprite, collapsed/exhausted state. Same character and style as
+the attached Ink references (white doodle-cat with dark ink-blot patches,
+flat colors, uneven warm dark-brown outline). Keep blotch placement,
+palette, line weight, and scale IDENTICAL.
+
+Pose — must NOT resemble the attached sleeping pose: Ink has collapsed —
+the composed librarian completely undone — splayed flat on its side/
+belly-up, limbs out, fur ruffled, tail limp, ears flat, eyes OPEN as tiny
+dazed dots. Slightly comical, storybook "utterly drained", never
+gruesome. Wide flat splayed silhouette, clearly distinct from the tidy
+sleep ball at 64 px. Body on the same ground line as the reference's
+feet.
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, ~10% margin,
+anchored bottom-center. No swirl/X eyes, no injuries, no text, no props,
+no shadow, clean alpha edges. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 14 — cat_bramble_sleep_a.png    [reference: cat_bramble_front_neutral.png]
+-----------------------------------------------------------------------------
+Character sprite, sleep pose, for a cozy village sim game. Use the
+attached image as the exact character and style reference: Bramble, a
+scruffy brown doodle-cat (body #8a6a44, darker scruff accents #5f472c,
+rough fur tufts, uneven warm dark-brown hand-inked outline, flat colors,
+no shading). Keep markings, scruff, palette, line weight, and scale
+IDENTICAL — change only the pose.
+
+Pose: curled asleep in a rough, slightly untidy ball on its side — head
+tucked to the viewer's left, tail loosely wrapped, scruffy fur tufts
+poking out of the ball outline, ears relaxed, eyes closed curved lines.
+Body rests on the same ground line as the standing reference's feet
+(anchor bottom-center).
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, subject
+~120–160 px wide, ~10% margin, anchored bottom-center. No "zzz" text, no
+props, no scenery, no shadow, clean alpha edges. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 15 — cat_bramble_sleep_b.png
+              [references: cat_bramble_front_neutral.png + your sleep_a]
+-----------------------------------------------------------------------------
+Character sprite, sleep pose, breathing frame — second frame of a 2-frame
+"boiling line" loop for the attached sleep_a. Redraw the EXACT same
+curled sleeping Bramble — same canvas position, ground line, loose tail
+wrap, scruff tufts and markings in place — with only a subtle inhale:
+body slightly fuller, tufts and linework re-traced with naturally
+different wobble. The alternating pair should read as slow breathing, no
+jump or slide.
+
+Canvas 256 x 256 px, PNG RGBA, transparent background, anchored
+bottom-center on the identical baseline as sleep_a. No text, no props, no
+shadow, clean alpha. Single frame.
+
+-----------------------------------------------------------------------------
+ PROMPT 16 — cat_bramble_collapsed.png
+              [references: cat_bramble_front_neutral.png + your sleep_a]
+-----------------------------------------------------------------------------
+Character sprite, collapsed/exhausted state. Same character and style as
+the attached Bramble references (scruffy brown doodle-cat, flat colors,
+uneven warm dark-brown outline). Keep markings, scruff, palette, line
+weight, and scale IDENTICAL.
+
+Pose — must NOT resemble the attached sleeping pose: Bramble has worked
+itself to collapse — splayed flat on its side/belly-up, all four limbs
+out, scruffy fur completely disheveled, tail limp, ears flat, eyes OPEN
+as tiny dazed dots. The proud posture is gone entirely. Slightly comical,
+storybook "overworked", never gruesome. Wide flat splayed silhouette,
+clearly distinct from the sleep ball at 64 px. Body on the same ground
+line as the reference's feet.
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, ~10% margin,
+anchored bottom-center. No swirl/X eyes, no injuries, no text, no props,
+no shadow, clean alpha edges. Single frame.
+
+=============================================================================
+ AFTER BATCH 2: flip the 16 P2 rows in ASSET-CHECKLIST.txt to [ADDED].
+ In-game wiring for sleep/collapsed sprites (loader glob + two draw-branch
+ swaps in canvas-renderer.ts) is a small render-only change — ask for it
+ with its own go-ahead, or bundle it with anim step 1.
+ Batch 3 = P3 emotion variants (40 files). Prompts on request.
+=============================================================================

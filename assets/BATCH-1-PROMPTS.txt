@@ -1,0 +1,244 @@
+>>> CANCELLED 2026-07-20 — cat art beyond the shipped neutrals was dropped (one-image model: all cat states are now code transforms). Do not generate. See ASSET-CHECKLIST.txt. <<<
+=============================================================================
+ WHISKERSTEAD — BATCH 1 IMAGE-GENERATION PROMPTS           [PROJECT-TRACKED]
+ Added to project: 2026-07-20 · lives in assets/
+ Top 10 assets: universal wiggle animation, frames a+b for all 5 cats.
+ These plug into the game automatically once anim step 1 lands
+ (files/10-universal-action-anim-spec.md §1.2 sprite hook).
+=============================================================================
+
+HOW TO USE
+ - One prompt = one image. Run in order; finish a cat's pair before the next.
+ - ATTACH the listed reference image(s) with each prompt (your tool is
+   ref-image capable). For frame b, attach BOTH the neutral sprite and your
+   accepted frame a, so the pair locks together.
+ - After generating: verify against SPRITE-SPEC-REFERENCE.txt §11, export
+   256x256 to assets/cats/2x/ and a 50% downscale (128x128) to /1x/ under
+   the exact filename, then flip the row to [ADDED] in ASSET-CHECKLIST.txt.
+ - The wiggle reads as a busy "doing something" rock: the same two frames
+   are reused for fishing, chopping, cooking, and every other action, so
+   the pose must stay generic — NO tools, NO props, NO context objects.
+
+-----------------------------------------------------------------------------
+ PROMPT 1 — cat_biscuit_wiggle_a.png      [reference: cat_biscuit_front_neutral.png]
+-----------------------------------------------------------------------------
+Character sprite, animation frame, for a cozy village sim game. Use the
+attached image as the exact character and style reference: Biscuit, a chunky
+pear-shaped orange tabby doodle-cat (body #e8a24a, darker tabby stripes
+#c67d24, cream muzzle and belly, simple dot eyes and w-mouth, uneven warm
+dark-brown hand-inked outline, flat colors, no shading, no gradients).
+Keep proportions, markings, palette, line weight, canvas position, and scale
+IDENTICAL to the reference — change only the pose.
+
+Pose (frame a of a 2-frame looping "work wiggle", ~4 fps): standing in place,
+front view facing the camera, whole body tilted about 8 degrees to the
+viewer's LEFT, pivoting at the feet; both stubby front paws raised to chest
+height and swung to the left, as if busily working at something in front of
+it; ears and tail sway slightly into the lean; neutral face unchanged. Feet
+stay planted in the exact same spot as the reference — the feet baseline must
+not move, because the game swaps frames with no offset.
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, subject
+~128–192 px tall centered with ~10% margin, anchored bottom-center at the
+feet on the same baseline as the reference. No tools, no props, no scenery,
+no text, no watermark, no shadow, no border, no gradients, no cropped limbs,
+clean alpha edges with no white halo. Deliverable: this single frame only.
+
+-----------------------------------------------------------------------------
+ PROMPT 2 — cat_biscuit_wiggle_b.png
+              [references: cat_biscuit_front_neutral.png + your wiggle_a]
+-----------------------------------------------------------------------------
+Character sprite, animation frame, matching pair for the attached wiggle_a.
+Same character and style as the attached Biscuit references (chunky orange
+tabby doodle-cat, flat colors, uneven warm dark-brown outline). Keep
+proportions, markings, palette, line weight, and scale IDENTICAL.
+
+Pose (frame b, the counter-swing of the loop): the mirror MOVEMENT of
+wiggle_a — body tilted about 8 degrees to the viewer's RIGHT, both paws
+swung to the right at chest height, ears and tail swaying right — but keep
+the tabby stripes and markings in their original places (mirror the pose,
+NOT the artwork). Feet planted on the identical baseline as both references;
+silhouette weight must match wiggle_a so the two frames alternate smoothly
+with no jitter of static parts.
+
+Canvas 256 x 256 px, PNG RGBA, transparent background, subject ~128–192 px
+tall, ~10% margin, anchored bottom-center at the feet. No tools, no props,
+no scenery, no text, no shadow, no border, clean alpha. Single frame only.
+
+-----------------------------------------------------------------------------
+ PROMPT 3 — cat_moss_wiggle_a.png          [reference: cat_moss_front_neutral.png]
+-----------------------------------------------------------------------------
+Character sprite, animation frame, for a cozy village sim game. Use the
+attached image as the exact character and style reference: Moss, a soft
+round grey longhair doodle-cat (body #9aa79a, darker grey-green accents
+#6f7d70, fluffy chest, relaxed posture, simple dot eyes, uneven warm
+dark-brown hand-inked outline, flat colors, no shading). Keep proportions,
+markings, palette, line weight, canvas position, and scale IDENTICAL to the
+reference — change only the pose.
+
+Pose (frame a of a 2-frame looping "work wiggle", ~4 fps): standing in
+place, front view facing the camera, whole body tilted about 8 degrees to
+the viewer's LEFT pivoting at the feet; both front paws raised to chest
+height and swung left, busily working; fluffy fur and tail sway slightly
+into the lean; calm neutral face unchanged. Feet planted exactly where the
+reference's feet are — the baseline must not move.
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, subject
+~128–192 px tall centered with ~10% margin, anchored bottom-center at the
+feet on the reference baseline. No tools, no props, no scenery, no text, no
+watermark, no shadow, no border, no gradients, clean alpha edges. Single
+frame only.
+
+-----------------------------------------------------------------------------
+ PROMPT 4 — cat_moss_wiggle_b.png
+              [references: cat_moss_front_neutral.png + your wiggle_a]
+-----------------------------------------------------------------------------
+Character sprite, animation frame, matching pair for the attached wiggle_a.
+Same character and style as the attached Moss references (round grey
+longhair doodle-cat, flat colors, uneven warm dark-brown outline). Keep
+proportions, markings, palette, line weight, and scale IDENTICAL.
+
+Pose (frame b, counter-swing): mirror MOVEMENT of wiggle_a — body tilted
+~8 degrees to the viewer's RIGHT, paws swung right at chest height, fur and
+tail swaying right — markings stay in their original places (mirror the
+pose, not the artwork). Feet on the identical baseline; silhouette weight
+matches wiggle_a for a smooth 2-frame loop.
+
+Canvas 256 x 256 px, PNG RGBA, transparent background, subject ~128–192 px
+tall, ~10% margin, anchored bottom-center at the feet. No props, no
+scenery, no text, no shadow, clean alpha. Single frame only.
+
+-----------------------------------------------------------------------------
+ PROMPT 5 — cat_pepper_wiggle_a.png      [reference: cat_pepper_front_neutral.png]
+-----------------------------------------------------------------------------
+Character sprite, animation frame, for a cozy village sim game. Use the
+attached image as the exact character and style reference: Pepper, a wiry
+black doodle-cat with restless energy (body #3b3a42, soft slate highlights
+#6b6a75, simple dot eyes, uneven warm dark-brown hand-inked outline, flat
+colors, no shading). Keep proportions, markings, palette, line weight,
+canvas position, and scale IDENTICAL to the reference — change only the
+pose.
+
+Pose (frame a of a 2-frame looping "work wiggle", ~4 fps): standing in
+place, front view facing the camera, whole body tilted about 8 degrees to
+the viewer's LEFT pivoting at the feet; both front paws raised to chest
+height and swung left, busily working — Pepper's version can carry a touch
+more spring (ears perked) but the SAME 8-degree lean as the other cats so
+all wiggles sync. Neutral face otherwise. Feet planted exactly on the
+reference baseline.
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, subject
+~128–192 px tall centered with ~10% margin, anchored bottom-center at the
+feet. No tools, no props, no scenery, no text, no watermark, no shadow, no
+border, no gradients, clean alpha edges. Single frame only.
+
+-----------------------------------------------------------------------------
+ PROMPT 6 — cat_pepper_wiggle_b.png
+              [references: cat_pepper_front_neutral.png + your wiggle_a]
+-----------------------------------------------------------------------------
+Character sprite, animation frame, matching pair for the attached wiggle_a.
+Same character and style as the attached Pepper references (wiry black
+doodle-cat, flat colors, uneven warm dark-brown outline). Keep proportions,
+markings, palette, line weight, and scale IDENTICAL.
+
+Pose (frame b, counter-swing): mirror MOVEMENT of wiggle_a — body tilted
+~8 degrees to the viewer's RIGHT, paws swung right at chest height, ears
+perked, tail flicked right — markings stay in their original places (mirror
+the pose, not the artwork). Feet on the identical baseline; silhouette
+weight matches wiggle_a for a smooth 2-frame loop.
+
+Canvas 256 x 256 px, PNG RGBA, transparent background, subject ~128–192 px
+tall, ~10% margin, anchored bottom-center at the feet. No props, no
+scenery, no text, no shadow, clean alpha. Single frame only.
+
+-----------------------------------------------------------------------------
+ PROMPT 7 — cat_ink_wiggle_a.png            [reference: cat_ink_front_neutral.png]
+-----------------------------------------------------------------------------
+Character sprite, animation frame, for a cozy village sim game. Use the
+attached image as the exact character and style reference: Ink, a
+white doodle-cat with dark ink-blot patches (body #f2efe6, near-black
+blotches #2c2a33, still watchful posture, simple dot eyes, uneven warm
+dark-brown hand-inked outline, flat colors, no shading). Keep proportions,
+the EXACT blotch placement, palette, line weight, canvas position, and
+scale IDENTICAL to the reference — change only the pose.
+
+Pose (frame a of a 2-frame looping "work wiggle", ~4 fps): standing in
+place, front view facing the camera, whole body tilted about 8 degrees to
+the viewer's LEFT pivoting at the feet; both front paws raised to chest
+height and swung left, busily working; Ink stays composed — minimal ear
+movement, calm face. Feet planted exactly on the reference baseline.
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, subject
+~128–192 px tall centered with ~10% margin, anchored bottom-center at the
+feet. No tools, no props, no scenery, no text, no watermark, no shadow, no
+border, no gradients, clean alpha edges. Single frame only.
+
+-----------------------------------------------------------------------------
+ PROMPT 8 — cat_ink_wiggle_b.png
+              [references: cat_ink_front_neutral.png + your wiggle_a]
+-----------------------------------------------------------------------------
+Character sprite, animation frame, matching pair for the attached wiggle_a.
+Same character and style as the attached Ink references (white doodle-cat
+with dark ink-blot patches, flat colors, uneven warm dark-brown outline).
+Keep proportions, palette, line weight, and scale IDENTICAL — and keep the
+ink blotches in their ORIGINAL positions on the body.
+
+Pose (frame b, counter-swing): mirror MOVEMENT of wiggle_a — body tilted
+~8 degrees to the viewer's RIGHT, paws swung right at chest height,
+composed face — mirror the pose, NOT the artwork (blotches must not flip
+sides). Feet on the identical baseline; silhouette weight matches wiggle_a
+for a smooth 2-frame loop.
+
+Canvas 256 x 256 px, PNG RGBA, transparent background, subject ~128–192 px
+tall, ~10% margin, anchored bottom-center at the feet. No props, no
+scenery, no text, no shadow, clean alpha. Single frame only.
+
+-----------------------------------------------------------------------------
+ PROMPT 9 — cat_bramble_wiggle_a.png    [reference: cat_bramble_front_neutral.png]
+-----------------------------------------------------------------------------
+Character sprite, animation frame, for a cozy village sim game. Use the
+attached image as the exact character and style reference: Bramble, a
+scruffy brown doodle-cat with a slightly hunched posture (body #8a6a44,
+darker scruff accents #5f472c, rough fur tufts, simple dot eyes, uneven
+warm dark-brown hand-inked outline, flat colors, no shading). Keep
+proportions, markings, scruff, palette, line weight, canvas position, and
+scale IDENTICAL to the reference — change only the pose.
+
+Pose (frame a of a 2-frame looping "work wiggle", ~4 fps): standing in
+place, front view facing the camera, whole body tilted about 8 degrees to
+the viewer's LEFT pivoting at the feet; both front paws raised to chest
+height and swung left, busily working; keep Bramble's hunch — the lean adds
+to it, the shoulders stay low. Neutral face. Feet planted exactly on the
+reference baseline.
+
+Canvas 256 x 256 px, PNG RGBA, fully transparent background, subject
+~128–192 px tall centered with ~10% margin, anchored bottom-center at the
+feet. No tools, no props, no scenery, no text, no watermark, no shadow, no
+border, no gradients, clean alpha edges. Single frame only.
+
+-----------------------------------------------------------------------------
+ PROMPT 10 — cat_bramble_wiggle_b.png
+              [references: cat_bramble_front_neutral.png + your wiggle_a]
+-----------------------------------------------------------------------------
+Character sprite, animation frame, matching pair for the attached wiggle_a.
+Same character and style as the attached Bramble references (scruffy brown
+doodle-cat, hunched posture, flat colors, uneven warm dark-brown outline).
+Keep proportions, markings, scruff, palette, line weight, and scale
+IDENTICAL.
+
+Pose (frame b, counter-swing): mirror MOVEMENT of wiggle_a — body tilted
+~8 degrees to the viewer's RIGHT, paws swung right at chest height,
+shoulders staying low in the hunch — markings and scruff tufts stay in
+their original places (mirror the pose, not the artwork). Feet on the
+identical baseline; silhouette weight matches wiggle_a for a smooth
+2-frame loop.
+
+Canvas 256 x 256 px, PNG RGBA, transparent background, subject ~128–192 px
+tall, ~10% margin, anchored bottom-center at the feet. No props, no
+scenery, no text, no shadow, clean alpha. Single frame only.
+
+=============================================================================
+ AFTER BATCH 1: flip the 10 rows in ASSET-CHECKLIST.txt to [ADDED], then
+ batch 2 = P2 (sleep pair + collapsed x 5 cats + palette sheet). Prompts on
+ request — they follow the same template with pose sections swapped.
+=============================================================================

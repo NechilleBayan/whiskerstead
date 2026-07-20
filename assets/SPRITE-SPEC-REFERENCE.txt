@@ -1,0 +1,134 @@
+=============================================================================
+ WHISKERSTEAD — SPRITE GENERATION SPEC REFERENCE           [PROJECT-TRACKED]
+ Added to project: 2026-07-20 · lives in assets/
+ The shared spec block behind every prompt. Prompts in BATCH-*.txt inline
+ the parts that matter; this file is the canonical source when writing new
+ prompts. Derived from files/00-style-guide.md, files/01-cats.md,
+ files/02-buildings.md, files/03-props-items.md, assets/cats/README.md,
+ and the 5 shipped neutral sprites (the look anchor).
+=============================================================================
+
+1. VISUAL STYLE (all categories — the #1 cohesion factor)
+   - Hand-drawn doodle / soft sticker style, matching the shipped cat
+     neutrals: chunky rounded shapes, flat fills, NO gradients, NO realistic
+     shading, at most one flat shadow tone per object.
+   - Uneven hand-inked outline, warm dark brown (not pure black), 2–4 px at
+     authoring scale, weight varying mid-stroke; corners may slightly
+     overshoot. Thinner internal lines (stripes, blotches, face).
+   - Charm over precision: slightly crooked is correct. Nothing
+     ruler-straight, no perfect circles.
+
+2. PALETTE
+   - Soft pastels + warm neutrals: creams, sage greens, dusty pinks, warm
+     browns, muted blues. Slightly desaturated; medium contrast.
+   - Locked cat colors (src/content/cats.ts):
+       biscuit  body #e8a24a  accent #c67d24   (orange tabby, cream muzzle)
+       moss     body #9aa79a  accent #6f7d70   (grey longhair)
+       pepper   body #3b3a42  accent #6b6a75   (black cat)
+       ink      body #f2efe6  accent #2c2a33   (white + ink blotches)
+       bramble  body #8a6a44  accent #5f472c   (brown, scruffy)
+   - World colors in use (canvas-renderer PALETTE): grass #c3d6b4, ink
+     outline #4a3f36, water #a9cbe0, wood #b9946a, cream #f6f0e2,
+     fire #f0a04b.
+   - Reserved: pale violet (#b79fd6 family) ONLY for cult/artifact assets.
+
+3. CAMERA & VIEWS
+   - Cats: flat front view ("front") and three-quarter front ("tqfront").
+     No perspective distortion; a soft storybook flatness.
+   - Buildings/world: gentle top-down-ish 3/4, consistent across all
+     buildings. Props/items: straight-on icon view, readable silhouette.
+   - Facing: cat art is authored facing LEFT where direction applies
+     (the engine mirrors with scaleX -1 to face right). Front views face
+     the camera.
+
+4. CANVAS / SIZE / PADDING / ANCHOR  (per category)
+                      authoring(2x)  display(1x)  subject size in canvas
+   cats               256 x 256      128 x 128    ~128–192 px tall, centered
+   buildings small    512 x 512      256 x 256    fills ~75% of canvas
+   pond / large       768 x 768      384 x 384    fills ~75%
+   props / items      128 x 128       64 x 64     bold, fills ~70%
+   - ~10% transparent margin all around so frames swap without jitter.
+   - Anchor: bottom-center at the feet/base. CRITICAL for cats: feet sit on
+     the SAME y baseline in every frame and view of the same cat, matched
+     to that cat's shipped neutral sprite. Frames are swapped in-engine
+     with no offset correction.
+   - Engine note: cat sprite renders 56 world-units tall anchored at
+     baseline (SPRITE_H/SPRITE_BASELINE, canvas-renderer.ts). Squash-
+     stretch is applied in-engine — author frames unsquashed.
+
+5. ANIMATION CONVENTION (v2, one-image model — locked 2026-07-20)
+   - NO frame pairs. Every asset is ONE still image; all motion is a code
+     transform of it (squish, bounce, tilt, wobble — like the walk squish).
+   - Author consequences: draw the neutral/base state only, centered and
+     unsquished, with clean silhouette in every direction the code may
+     tilt it (~±10°). Layered states (fire on woodpile) are separate
+     single images that the code composes and animates independently.
+
+6. FILE FORMAT & EXPORT
+   - PNG, RGBA, fully transparent background. No backdrop, no scenery, no
+     framing device, no drop shadow (shadows are engine territory).
+   - Clean alpha edges: no white halo, no background residue, no
+     semi-transparent fringe.
+   - Author at 2x, export same filename to both 2x/ and 1x/ folders
+     (1x = clean 50% downscale, bicubic or box — keep edges soft, this is
+     not pixel art).
+
+7. NAMING (lowercase, underscores)
+   - cats:      cat_<name>_<view>_<emotion>.png      (existing loader)
+                cat_<name>_wiggle_<a|b>.png          (wiggle hook, step 1)
+                cat_<name>_sleep_<a|b>.png / cat_<name>_collapsed.png (P2)
+   - buildings: bldg_<subject>_<state>.png     sites: site_<subject>_<state>.png
+   - props:     prop_<subject>_<variant>.png   env/fx/ui/tile/decal_ prefixes
+     per ASSET-CHECKLIST.txt rows. Names in the checklist are canonical.
+
+8. CONSISTENCY & VARIATION LIMITS (put in EVERY prompt)
+   - Reference: attach the relevant shipped sprite (for cats:
+     assets/cats/2x/cat_<name>_front_neutral.png). Match proportions, line
+     weight, palette, scale, and canvas position exactly.
+   - Only change what the prompt names (pose / expression / state). Do not
+     change proportions, colors, or markings; no new accessories; no
+     scenery; no restyling.
+
+9. READABILITY TARGETS
+   - Cats display 64–96 px tall: emotion must read from posture + ears more
+     than face. Items display 24–32 px: 1–2 colors, thick outline, bold
+     silhouette. Buildings: active-state tell (smoke/glow) readable at a
+     glance. Silhouette beats detail everywhere; no photographic
+     microtexture, no tiny decorative marks.
+
+10. STANDARD NEGATIVE CONSTRAINTS (append to every prompt)
+    No text, no watermark, no background, no border, no extra objects, no
+    gradients, no realistic lighting, no cast shadow, no cropped limbs, no
+    duplicated parts, no style drift from the reference image.
+
+11a. LAYER REGISTRATION (one-image model: how composed layers align)
+    - Shared canvas contract: partner layers use the SAME canvas size,
+      bottom-center anchor, and a named registration line stated in BOTH
+      prompts (e.g. "woodpile top surface at 60% canvas height" /
+      "flame base sits exactly on the 60% line"). Overlay at (0,0) then
+      aligns by construction.
+    - PREFERRED — decompose, don't compose: generate the COMBINED image
+      once (lit bonfire), approve it, then use image-editing prompts to
+      split it: "remove the flame, keep the pile pixel-identical" →
+      layer_woodpile; "keep only the flame, erase the rest" → layer_fire.
+      Layers cut from one picture cannot misalign.
+    - Standalone layers: attach the partner image as a POSITIONING
+      reference: "do not draw the attached woodpile — output only the
+      flame on a same-size transparent canvas, base on the pile's top
+      edge as shown."
+    - Code absorbs the residue: every composed layer gets an (x,y) offset
+      constant in the renderer, so art only needs (a) generous transparent
+      margins (nothing touching edges) and (b) a consistent bottom-center
+      anchor. Animated layers need headroom for their code transform
+      (fire bounces ~±15% — leave space above the flame tip).
+
+11. ACCEPTANCE CHECKLIST (verify before flipping a row to [ADDED])
+    [ ] correct canvas size, transparent RGBA
+    [ ] subject size and feet baseline match the reference sprite
+    [ ] palette sampled from the locked colors, outline warm dark brown
+    [ ] silhouette readable at final display size (cats 64 px, props 24 px)
+    [ ] clean alpha, no halo/fringe, nothing clipped by canvas edge
+    [ ] loop partners (a/b) align: flip between them shows only the
+        intended movement, no jitter of static parts
+    [ ] filename matches the checklist row exactly, exported to 2x/ and 1x/
+=============================================================================

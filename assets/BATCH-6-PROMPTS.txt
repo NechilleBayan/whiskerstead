@@ -1,0 +1,153 @@
+=============================================================================
+ WHISKERSTEAD — BATCH 6 IMAGE-GENERATION PROMPTS           [PROJECT-TRACKED]
+ Added to project: 2026-07-20 · lives in assets/ · one-image model, final
+ batch (3 of 3). Produces the 12 checklist P3 item files. One image per
+ item — quantity is stacked draws, motion (fish flop, done-beat lift) is
+ code transforms, fullness states (soup, book open) are code composition
+ or posture.
+ ENGINE NOTE: CODE — item icons are drawn procedurally today
+ (drawItemIcon in canvas-renderer.ts); the world-image loader wiring
+ swaps them in. Generate freely meanwhile.
+=============================================================================
+
+HOW TO USE — TWO-PART PASTE
+ Paste [numbered prompt] + [SHARED SPEC FOOTER at the bottom] as one
+ message. ATTACH as style-only references:
+   - assets/cats/2x/cat_biscuit_front_neutral.png   (line/palette anchor)
+   - your approved env_tree.png or prop outputs from this batch as they
+     accumulate (keeps the set self-consistent)
+ Items are the smallest art in the game (display 24–32 px): silhouette
+ and 1–2 colors do ALL the work. If a result reads muddy when scaled to
+ 24 px, reject it. Export 128x128 to assets/world/2x/ and 64x64 to /1x/,
+ flip the checklist row to [ADDED].
+
+-----------------------------------------------------------------------------
+ 1. prop_fish.png
+-----------------------------------------------------------------------------
+Inventory item / carriable resource: one plump cartoon fish, side view
+facing left. Soft blue-grey body (#8fb8cf) with a simple triangular tail
+fin, one dot eye, one short curved gill line. The game's star prop — it
+gets bounced by code when freshly caught and held overhead in the
+done-beat, so the shape must be a single chunky silhouette with no thin
+protruding fins. Drawn level/horizontal, centered.
+
+-----------------------------------------------------------------------------
+ 2. prop_wood.png
+-----------------------------------------------------------------------------
+Inventory item / carriable resource: one small bundle of 2–3 short
+sticks tied together with a single simple cord loop. Warm wood browns
+(#b58a5c sticks, #8a6a44 shading tone, visible end rings). Quantity in
+game = this same image stacked, so the bundle must look natural piled on
+copies of itself: compact, roughly horizontal, flat-ish top and bottom.
+
+-----------------------------------------------------------------------------
+ 3. prop_vegetable.png
+-----------------------------------------------------------------------------
+Inventory item / gatherable resource: ONE round garden vegetable — a
+plump turnip-like root in warm red-orange (#c0603f) with a tiny pair of
+green leaves (#7fa25e) on top. This is the game's only vegetable (no
+seasonal variants), so keep it generic and instantly readable as
+"veggie" at 24 px: one fat round silhouette, leaves as one simple blob.
+
+-----------------------------------------------------------------------------
+ 4. prop_bread.png
+-----------------------------------------------------------------------------
+Inventory item / food: one rounded bread loaf in warm golden brown
+(#d8a45a) with 2–3 short diagonal score lines on top in a slightly
+deeper tone. Side view, sitting level. Classic chunky cartoon loaf —
+nothing else, no slices, no basket.
+
+-----------------------------------------------------------------------------
+ 5. prop_bowl.png
+-----------------------------------------------------------------------------
+Inventory item / food container: one simple round soup bowl seen at a
+gentle 3/4 angle so a bit of the interior rim shows — warm honey wood
+(#e0b26a) outside, slightly lighter inside. Drawn EMPTY: no soup, no
+steam, no spoon (fullness = the game adds a procedural steam wisp).
+Level, centered, flat base.
+
+-----------------------------------------------------------------------------
+ 6. prop_yarn.png
+-----------------------------------------------------------------------------
+Inventory item / plaything: one round ball of yarn in dusty pink
+(#c98aa0), with 3–4 simple curved doodle strands wrapping around the
+sphere and one short loose tail of yarn trailing to the side. One chunky
+circular silhouette.
+
+-----------------------------------------------------------------------------
+ 7. prop_flowers.png
+-----------------------------------------------------------------------------
+Inventory item / offering: a small bunch of 3 simple doodle flowers —
+round dusty-pink blossoms (#d47a9a) with tiny pale centers, on short
+green stems (#7fa25e) gathered at the bottom as one bunch. Also used as
+a cult offering laid on the ground, so it must read lying flat as well
+as carried: compact triangular bunch silhouette, no vase, no wrapping.
+
+-----------------------------------------------------------------------------
+ 8. prop_trinket.png
+-----------------------------------------------------------------------------
+Inventory item / collectible: one small shiny doodad — an old round
+locket-like medallion in muted gold (#e0c65a) on a tiny bit of chain,
+with a single simple star-glint stroke on its face (drawn, not glowing).
+Ambiguously old and interesting rather than valuable. One compact
+silhouette.
+
+-----------------------------------------------------------------------------
+ 9. prop_junk.png
+-----------------------------------------------------------------------------
+Inventory item / junk catch: ONE old boot in worn grey-brown (#8a8577),
+side view facing left, slightly slumped with a floppy open top and a
+drooping tongue, one patch stitched on the side. The game's only junk
+item — comic "fished up an old boot" energy, instantly readable at
+24 px. No water drips, no fish, no other objects.
+
+-----------------------------------------------------------------------------
+ 10. prop_rod.png
+-----------------------------------------------------------------------------
+Held tool prop: one simple fishing rod — a slightly crooked warm-brown
+stick (#8a6a44) with a small round reel dot near the grip. NO line, NO
+bobber, NO hook (the game draws the line and bobber as code strokes so
+they can animate). Drawn diagonally from lower-left grip to upper-right
+tip so it sits naturally in a cat's paws. One clean stick silhouette.
+
+-----------------------------------------------------------------------------
+ 11. prop_ladle.png
+-----------------------------------------------------------------------------
+Held tool prop: one wooden soup ladle — long slightly crooked handle,
+deep round cup at the end, warm wood (#b9946a) with a darker cup
+interior. Drawn diagonally, cup at lower-right, so it reads in a cat's
+paws and stirring over the pot. Nothing else — no soup, no drips.
+
+-----------------------------------------------------------------------------
+ 12. prop_book.png
+-----------------------------------------------------------------------------
+Inventory item / held prop: one CLOSED book — chunky rounded cover in
+muted blue-grey (#9fb0c8) with a slightly paler page block visible at
+the fore-edge and one simple spine line. No title, no lettering, no
+bookmark ("reading" is shown by the cat's posture in code, not an open
+book). Slightly tilted (~10°) for a hand-held feel, centered.
+
+=============================================================================
+ SHARED SPEC FOOTER — paste after EVERY prompt above, as one message
+=============================================================================
+Game inventory-item sprite for a cozy hand-drawn doodle village sim.
+Match the art style of the attached reference image(s) exactly — uneven
+warm dark-brown hand-inked outline (thick relative to the small canvas,
+weight varying mid-stroke), flat slightly-desaturated fills, no
+gradients, no shading beyond at most one flat tone, charming wobbly
+hand-drawn shapes. This icon displays at 24–32 px in game: ONE bold
+chunky silhouette, 1–2 main colors, no fine interior detail, no
+microtexture. Canvas 128 x 128 px, PNG RGBA, fully transparent
+background, subject centered and filling ~70% of the canvas, ~10%
+margin, nothing touching the edges. Do NOT include the cat, tree, or
+any reference content in the output. No ground, no scenery, no
+sparkles, no motion lines, no text or lettering of any kind, no
+watermark, no shadow, no border, clean alpha edges with no white halo.
+Single object only, one image.
+=============================================================================
+ AFTER BATCH 6: flip the 12 P3 rows in ASSET-CHECKLIST.txt to [ADDED].
+ That completes the required 26-image set (P4 ground remains optional).
+ Wiring (render-only, own go-ahead): world-image loader + drawItemIcon
+ swap; stacking for quantities; code transforms for flop/done-beat; rod
+ line + bobber stay code strokes.
+=============================================================================

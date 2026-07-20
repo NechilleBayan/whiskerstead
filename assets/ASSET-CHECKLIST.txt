@@ -1,0 +1,117 @@
+=============================================================================
+ WHISKERSTEAD — ASSET CHECKLIST (SIMPLIFIED: ONE-IMAGE MODEL) [PROJECT-TRACKED]
+ v2 2026-07-20 · lives in assets/ · supersedes ASSET-CHECKLIST-DETAILED.txt
+ (archived) and cancels BATCH-1/2/3-PROMPTS.txt (cat art beyond the shipped
+ neutrals dropped).
+=============================================================================
+
+THE MODEL (locked 2026-07-20)
+ One image per distinct THING. Everything else is code, in the spirit of
+ the existing squash-stretch walk:
+   ANIMATION = transform the single image (squish, bounce, tilt, wobble).
+               No _a/_b frame pairs anywhere.
+   QUANTITY  = stack/offset multiple draws of the same image
+               (3 wood = the one wood image drawn 3 times).
+   STATE     = compose reusable layers (bonfire lit = woodpile + fire
+               layer bouncing on top; unlit = woodpile alone).
+   VARIANTS  = code flip / lean / scale / tint of the one image
+               (tree variety, owner-colored houses).
+
+MARKERS   [ ] to generate · [GEN] generated, not imported · [ADDED] in repo
+ENGINE    every non-cat row is CODE: the renderer draws these procedurally
+          today and has no image loader for them yet. Wiring = one generic
+          loader + a draw-swap per row, render-only, its own go-ahead.
+          Generate art freely meanwhile.
+SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
+          Export 2x + 1x, same filename, per SPRITE-SPEC-REFERENCE.txt.
+
+-----------------------------------------------------------------------------
+ P0 — CATS: COMPLETE. NO NEW ART, EVER.                          0 new files
+-----------------------------------------------------------------------------
+ [ADDED] cat_<name>_front_neutral.png / cat_<name>_tqfront_neutral.png ×5
+ All states are code transforms of these 10 sprites:
+   walk        squash-stretch bounce                    (shipped)
+   wiggle      2-phase tilt at the feet                 (anim step 1, approved)
+   done beat   sprite + item icon lifted overhead       (anim step 2, approved)
+   sleep       sprite laid on its side + slow breathing squish      (to wire)
+   collapsed   laid flat + extra flatten/splay — must not read as sleep (to wire)
+   emotions    speech/thought bubbles + procedural eye overlays     (to wire)
+   facing      mirror scaleX                            (shipped)
+
+-----------------------------------------------------------------------------
+ P1 — REUSABLE LAYERS (the composition kit)                         4 files
+ Prompts ready: BATCH-4-PROMPTS.txt (5 prompts, decompose pattern)
+-----------------------------------------------------------------------------
+ [ ] layer_fire.png       flame only, transparent. Code: squish-bounce
+                          flicker (the "walk squish" of fire). Reused:
+                          bonfire lit, soup-station cooking, future candles.
+ [ ] layer_woodpile.png   low stack of logs. Reused: bonfire base (unlit =
+                          this alone), house build stage 0 materials pile.
+ [ ] env_tree.png         ONE tree. Code: growth/regrow scale (shipped),
+                          flip + lean + slight hue shift for variety —
+                          replaces the 3 hand variants.
+ [ ] env_stump.png        post-chop. Regrowth = env_tree scaling back up
+                          (shipped logic).
+
+-----------------------------------------------------------------------------
+ P2 — BUILDINGS (one image each; states composed in code)           8 files
+ Prompts ready: BATCH-5-PROMPTS.txt (two-part paste)
+-----------------------------------------------------------------------------
+ [ ] bldg_soupstation.png station with pot. cooking = + layer_fire under
+                          pot + procedural steam (shipped) · ready = +
+                          stacked prop_bowl draws · empty = image alone.
+ [ ] bldg_bakery.png      chimney smoke = procedural steam (shipped).
+ [ ] bldg_library.png     night window glow = procedural (shipped).
+ [ ] bldg_market.png      EMPTY stall art. stocked = stacked prop draws
+                          (vegetable/bread) on the counter, count from
+                          b.state.stocked.
+ [ ] bldg_house.png       ONE house. stage 0 = layer_woodpile · stage 1 =
+                          this image low-alpha "sketch" · stage 2 = full ·
+                          owner color = existing ownerTint() code tint.
+ [ ] bldg_pond.png        still water. ripples/accident splash = code
+                          wobble (shipped primitives).
+ [ ] bldg_forage.png      bare patch. remaining veg = stacked
+                          prop_vegetable draws from b.state.veg.
+ [ ] site_artifact.png    ONE ambiguous object (reserved pale violet
+                          #b79fd6 family). shrined = + code aura ellipse;
+                          offerings already render as ground items.
+
+-----------------------------------------------------------------------------
+ P3 — ITEMS (one image each; display 24–32 px)                     12 files
+ Prompts ready: BATCH-6-PROMPTS.txt (two-part paste)
+-----------------------------------------------------------------------------
+ [ ] prop_fish.png        flop on catch = code bounce/rock. done-beat star.
+ [ ] prop_wood.png        small tied bundle. Quantity = stacked draws.
+ [ ] prop_vegetable.png   ONE veg (no seasonal set).
+ [ ] prop_bread.png
+ [ ] prop_bowl.png        soup full = + procedural steam wisp; empty = alone.
+ [ ] prop_yarn.png
+ [ ] prop_flowers.png     also the cult offering.
+ [ ] prop_trinket.png
+ [ ] prop_junk.png        ONE junk (the old boot won).
+ [ ] prop_rod.png         held prop; line + bobber = code strokes.
+ [ ] prop_ladle.png       held prop.
+ [ ] prop_book.png        one closed book; "reading" = held prop + posture.
+
+-----------------------------------------------------------------------------
+ P4 — OPTIONAL GROUND (only if the code look wears thin)            2 files
+-----------------------------------------------------------------------------
+ [ ] tile_grass.png       256 seamless. Current procedural scribble tufts
+                          are fine — generate only if wanted.
+ [ ] decal_path.png       one worn-dirt stroke; chains/curves by rotated
+                          repeated draws.
+
+-----------------------------------------------------------------------------
+ NEVER ASSETS (stays code forever)
+-----------------------------------------------------------------------------
+ speech/thought/gossip bubbles + intent icons (drawn text/shapes) · steam ·
+ rain/storm · window glow · day/night tint · sparkle · splash · ripples ·
+ wiggle frames · sleep/collapsed poses · emotion faces · seasonal recolors
+ (code tint when M5 comes).
+
+-----------------------------------------------------------------------------
+ TOTALS   26 required images (+2 optional) — down from 146 names (~292
+          files) in ASSET-CHECKLIST-DETAILED.txt. Cats: done. Suggested
+          order: P1 → P2 → P3 (P1 completes the bonfire, the map's
+          centerpiece, and covers the most-reused layers).
+=============================================================================

@@ -1,0 +1,149 @@
+=============================================================================
+ WHISKERSTEAD — BATCH 5 IMAGE-GENERATION PROMPTS           [PROJECT-TRACKED]
+ Added to project: 2026-07-20 · lives in assets/ · one-image model batch 2 of 3.
+ Produces the 8 checklist P2 building files. Every state the sim has is
+ composed in code from these single images (+ the batch-4 layers + item
+ props) — no state variants are generated here.
+ ENGINE NOTE: CODE — needs the world-image loader + per-building draw
+ swaps (render-only, own go-ahead). Generate freely meanwhile.
+=============================================================================
+
+HOW TO USE — TWO-PART PASTE
+ Paste [numbered prompt] + [SHARED SPEC FOOTER at the bottom] as one
+ message. ATTACH as style references (content must not appear in output):
+   - assets/cats/2x/cat_biscuit_front_neutral.png  (line/palette anchor)
+   - your approved env_tree.png from batch 4        (world-style anchor)
+ Registration lines matter — the sim stacks props and layers onto stated
+ heights; code offsets absorb small errors, but keep surfaces where the
+ prompt puts them. Export per SPRITE-SPEC-REFERENCE.txt to
+ assets/world/2x/ + /1x/, then flip the checklist row to [ADDED].
+
+-----------------------------------------------------------------------------
+ 1. bldg_soupstation.png                                    canvas 512 x 512
+-----------------------------------------------------------------------------
+Interactive crafting-station building: the village soup station. A small
+open-front wooden hut (warm wood #b9946a, slightly darker crooked roof),
+and in front of its opening a big round cooking pot (deep warm brown,
+wide mouth seen at the gentle 3/4 angle) standing on a simple raised
+stand with a clearly OPEN GAP beneath the pot — the game draws a bouncing
+flame layer inside that gap when cooking, so the gap must stay empty and
+visible, its floor on the ground line. No fire, no steam, no food in this
+image (all added by code). Building base anchored bottom-center on the
+90% line, structure filling ~75% of canvas. Identification comes from the
+pot — no signs, no text.
+
+-----------------------------------------------------------------------------
+ 2. bldg_bakery.png                                         canvas 512 x 512
+-----------------------------------------------------------------------------
+Interactive building: the village bakery. A cozy crooked hut in warm
+honey wood (#d9a86a) with a rounded oven-mouth opening at the front and
+ONE prominent chimney rising from the roof, its round open mouth clearly
+visible — the game anchors a procedural smoke wisp to the chimney mouth,
+so nothing may sit above it (empty headroom). A shelf or window ledge at
+the front may hold two or three simple round loaf shapes baked into the
+art (bread is this building's identity). No smoke, no text, no sign.
+Base anchored bottom-center on the 90% line, ~75% of canvas.
+
+-----------------------------------------------------------------------------
+ 3. bldg_library.png                                        canvas 512 x 512
+-----------------------------------------------------------------------------
+Interactive building: the village library. A slightly taller hut in a
+muted blue-grey (#9fb0c8) with a crooked roof and ONE large friendly
+front window as the dominant feature — the game paints a warm glow over
+this window at night, so it must be big, roughly rectangular, and
+unobstructed (draw the panes simply; a hint of book spines inside is
+welcome). A tiny second round window is fine. No glow, no light rays, no
+text. Base anchored bottom-center on the 90% line, ~75% of canvas.
+
+-----------------------------------------------------------------------------
+ 4. bldg_market.png                                         canvas 512 x 512
+-----------------------------------------------------------------------------
+Interactive building: the village market stall, drawn EMPTY. An open
+wooden stall (counter #cdb083) with a striped or scalloped awning in
+warm terracotta (#c07d5a) on crooked poles. The counter's flat TOP
+surface is the registration line: keep it level, clear, and at 55% of
+canvas height — the game stacks vegetable/bread item sprites on it when
+stocked, so nothing may occupy the space above the counter under the
+awning. No goods, no baskets, no price signs, no text. Base anchored
+bottom-center on the 90% line, ~75% of canvas.
+
+-----------------------------------------------------------------------------
+ 5. bldg_house.png                                          canvas 512 x 512
+-----------------------------------------------------------------------------
+Interactive building: THE villager house — the game's only house model
+(each cat's copy is color-tinted in code, and the under-construction
+stage is this same image drawn faint). A small crooked cottage: walls in
+a PALE WARM NEUTRAL cream (#d8c3a2 — must stay light and low-saturation
+so code tints read cleanly), a slightly overhanging triangular roof in
+muted brick brown (#9c6b52), one friendly front door and one small
+window. Charming, slightly lopsided, generic — no personal decorations,
+no flowers, no mailbox (personality comes from the code tint). No text.
+Base anchored bottom-center on the 90% line, ~75% of canvas.
+
+-----------------------------------------------------------------------------
+ 6. bldg_pond.png                                           canvas 768 x 768
+-----------------------------------------------------------------------------
+Environment site: the fishing pond, seen at the same gentle 3/4
+top-down angle — so it reads as a wide, slightly wobbly horizontal
+ellipse of still water (#a9cbe0) with a lighter highlight patch
+(#bfe0ee) off-center, an uneven hand-inked shoreline, and 2–3 simple
+lily pads near one edge. STILL water only — no ripple rings, no splash,
+no fish, no reflections (the game animates ripples with code wobble).
+A few pebbles on the bank are fine; no dock, no reeds blocking the bank
+(cats stand around the full perimeter). Ellipse centered, filling ~75%
+of canvas width, vertically centered on the canvas middle. No text.
+
+-----------------------------------------------------------------------------
+ 7. bldg_forage.png                                         canvas 512 x 512
+-----------------------------------------------------------------------------
+Environment resource node: the forage patch, drawn EMPTY (harvested
+state). A low rounded mound of leafy green (#7fa25e) — a soft bush-bed
+seen at the gentle 3/4 angle, gently lumpy outline, a few simple leaf
+doodles inside. Its flat-ish TOP surface is the registration area: keep
+the upper half of the mound plain and uncluttered, because the game
+draws small vegetable item sprites sitting on it to show how much is
+left to gather. No berries, no vegetables, no mushrooms baked in, no
+text. Mound base anchored bottom-center on the 90% line, filling ~60%
+of canvas width (it is a low object — wider than tall).
+
+-----------------------------------------------------------------------------
+ 8. site_artifact.png                                       canvas 256 x 256
+-----------------------------------------------------------------------------
+Mystery prop-site: the artifact. ONE small ambiguous object in the
+reserved cult accent — pale violet (#b79fd6) with a deeper violet-grey
+outline (#6d5a8c) instead of the usual brown ink. It must NOT look
+clearly magical and NOT look clearly mundane: a slightly irregular
+tilted triangular-ish shard, half-sunk into the ground at a small angle,
+with two or three faint scratched doodle marks on its face that suggest
+meaning without being readable symbols. No glow, no sparkles, no aura,
+no pedestal, no candles (the shrine state is composed in code from an
+aura ellipse + offering items). No text. Object anchored bottom-center
+on the 90% line, standing ~140 px tall in the 256 canvas.
+
+=============================================================================
+ SHARED SPEC FOOTER — paste after EVERY prompt above, as one message
+=============================================================================
+Game building/environment sprite for a cozy hand-drawn doodle village
+sim. Match the art style of the attached reference images exactly —
+uneven warm dark-brown hand-inked outline (2–4 px, weight varying
+mid-stroke, corners slightly overshooting), flat slightly-desaturated
+fills, no gradients, no realistic shading (at most one flat shadow tone),
+wobbly charming hand-drawn shapes where slightly crooked is correct —
+but do NOT include the cat, the tree, or any character from the
+references in the output. Gentle top-down-ish 3/4 viewing angle,
+front face toward the viewer, consistent with a cozy village map. PNG
+RGBA, fully transparent background, ~10% margin, nothing touching the
+canvas edges, subject centered. No ground plane, no grass base, no
+scenery around the subject, no text or lettering of any kind, no
+watermark, no cast shadow, no border, clean alpha edges with no white
+halo. Single subject only, one image.
+=============================================================================
+ AFTER BATCH 5: flip the 8 P2 rows in ASSET-CHECKLIST.txt to [ADDED].
+ Wiring (render-only, own go-ahead): world-image loader + per-building
+ draw swaps; composed states — soupstation cooking = layer_fire in the
+ pot gap + existing steam code; market stocked / forage stock = stacked
+ prop draws (needs batch 6 items); house stages = woodpile → faint →
+ full + ownerTint; pond ripples = existing wobble; artifact shrine =
+ code aura + ground offerings.
+ Batch 6 (final) = P3 items, 12 files. On request.
+=============================================================================

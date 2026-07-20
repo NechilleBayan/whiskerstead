@@ -23,3 +23,11 @@ After sim changes: `npm test`, then run a 2-day digest (see scratchpad pattern: 
 ## Dev hooks
 `window.__sim` and `window.__renderer` are exposed in the browser for inspection.
 Debug overlay: press **D**. Fast-forward: **F**. Weather: **1/2/3**.
+
+## Asset generation prompts
+When the user asks for image-generation prompts or an asset batch, follow
+`assets/PROMPT-AUTHORING-GUIDE.txt` exactly (one-image model, decompose-don't-
+compose layering, batch file format, checklist/PROJECT-STATE updates). Track
+assets in `assets/ASSET-CHECKLIST.txt`; style/canvas rules live in
+`assets/SPRITE-SPEC-REFERENCE.txt`. Cats are art-complete — never propose new
+cat sprites; all cat states are code transforms of the 10 shipped neutrals.

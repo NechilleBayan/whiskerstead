@@ -1,0 +1,83 @@
+=============================================================================
+ WHISKERSTEAD — IMAGE-GENERATION PROMPT AUTHORING GUIDE    [PROJECT-TRACKED]
+ Added to project: 2026-07-20 · lives in assets/
+ FOR CLAUDE CODE: when the user asks for image-generation prompts or a new
+ asset batch, follow this exact method. It is how BATCH-4/5/6-PROMPTS.txt
+ were produced. Do not invent a new format.
+=============================================================================
+
+0. GROUND EVERY PROMPT IN THE PROJECT FIRST
+   Read before writing anything:
+     - assets/ASSET-CHECKLIST.txt        what is needed, status, priorities
+     - assets/SPRITE-SPEC-REFERENCE.txt  canonical style/canvas/naming +
+                                         §11a layer registration + §11
+                                         acceptance checklist
+     - the relevant files/*.md design doc for the asset category
+     - src/config colors + src/render/canvas-renderer.ts PALETTE for hexes
+     - LOOK at a shipped sprite (Read the PNG) — describe the real style,
+       not the style guide's words alone.
+
+1. THE ONE-IMAGE MODEL IS LOCKED (user decision 2026-07-20)
+   ONE image per distinct thing. Never prompt for frame pairs, state
+   variants, or seasonal versions. In-game:
+     animation = code transforms (squish/bounce/tilt, like the walk squish)
+     quantity  = stacked draws of the same image
+     state     = composed layers (fire on woodpile) or code overlays
+     variants  = code flip/lean/scale/tint
+   Cats are DONE (10 neutrals) — never propose new cat art.
+   Prompt-side consequences: draw the neutral/base/EMPTY state only;
+   leave headroom for code motion; keep surfaces where stacked props
+   will sit clear; tintable art uses pale low-saturation base colors.
+
+2. LAYERED ASSETS: DECOMPOSE, DON'T COMPOSE (spec ref §11a)
+   For anything the game composes from layers: generate the COMBINED
+   image once, approve it, then use edit prompts to split it ("remove X,
+   keep Y pixel-identical"; "keep only X, erase the rest, close off the
+   hidden edge"). Layers cut from one picture cannot misalign. State a
+   named registration line (e.g. "pile top at 60% canvas height") in
+   every prompt that composes, and keep the combined image in assets/ as
+   a working reference (not imported).
+
+3. PROMPT CONTENT (ref-image-capable generator — the user's tool)
+   Every prompt carries: asset type + gameplay purpose · subject with
+   locked hex colors · style via attached reference (biscuit neutral for
+   line/palette; approved world art as it accumulates) with "do NOT
+   include the reference content in the output" · camera/facing ·
+   pose/state (base state only) · canvas size + subject fill % + ~10%
+   margin + bottom-center anchor on the 90% ground line (cats: shared
+   feet baseline) · registration lines where code composes · PNG RGBA
+   transparent · negative constraints (no text, watermark, scenery,
+   shadow, border, gradients; clean alpha, no halo) · readability target
+   at final display size.
+
+4. BATCH FILE FORMAT (assets/BATCH-<N>-PROMPTS.txt, continue numbering)
+   - Header banner: [PROJECT-TRACKED], date, what it produces, ENGINE
+     note (READY vs CODE — is renderer wiring needed before art shows?).
+   - HOW TO USE section: run order, what to attach, export destinations
+     (cats → assets/cats/2x + 1x; world → assets/world/2x + 1x; same
+     filename both folders, 1x = 50% downscale), and "flip the checklist
+     row to [ADDED]".
+   - Prompts: fully self-contained for small batches (≤10, like batch 4);
+     TWO-PART PASTE for larger/repetitive batches (short numbered prompts
+     + one SHARED SPEC FOOTER pasted after each — like batches 5–6).
+   - Edit prompts (decompose/derive) explicitly attach the approved
+     parent output and demand pixel-identical retention.
+   - Footer: what to do after the batch + what the next batch would be.
+
+5. AFTER WRITING THE BATCH FILE
+   - Add "Prompts ready: BATCH-<N>-PROMPTS.txt" under the matching
+     priority group in ASSET-CHECKLIST.txt.
+   - Log the batch in PROJECT-STATE.md (task 7, asset pipeline entry).
+   - If a decision changed the model/specs, update
+     SPRITE-SPEC-REFERENCE.txt and banner any superseded files
+     (>>> CANCELLED / ARCHIVED <<<) — never silently delete.
+
+6. WHEN REQUIREMENTS ARE AMBIGUOUS
+   Ask 1–3 targeted questions BEFORE writing files (batch composition,
+   tool capabilities, scope) — the user prefers being asked over
+   guessing. Recommend a default with each question.
+
+ HISTORY: batches 1–3 (multi-frame cat art) are CANCELLED — pre-date the
+ one-image model. Batches 4 (layers), 5 (buildings), 6 (items) are the
+ live set. ASSET-CHECKLIST-DETAILED.txt is the archived 146-name list.
+=============================================================================

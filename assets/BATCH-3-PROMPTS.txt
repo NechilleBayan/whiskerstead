@@ -1,0 +1,290 @@
+>>> CANCELLED 2026-07-20 — cat art beyond the shipped neutrals was dropped (one-image model: all cat states are now code transforms). Do not generate. See ASSET-CHECKLIST.txt. <<<
+=============================================================================
+ WHISKERSTEAD — BATCH 3 IMAGE-GENERATION PROMPTS           [PROJECT-TRACKED]
+ Added to project: 2026-07-20 · lives in assets/
+ 40 assets (checklist P3): emotion variants — {happy, annoyed, scared,
+ tired} x {front, tqfront} x 5 cats. Per assets/cats/README.md step 3
+ (smug/sad occur in-sim but fall back to neutral/tired — deliberately
+ skipped).
+ ENGINE NOTE: CODE — the sprite loader currently globs _neutral only, and
+ nothing selects art by cat.emotion yet. Small render-only change to wire;
+ its own go-ahead. Generate freely meanwhile.
+=============================================================================
+
+HOW TO USE — TWO-PART PASTE
+ Each prompt below is short. When running one, paste:
+     [the numbered prompt]  +  [the SHARED SPEC FOOTER at the bottom]
+ as a single message, and ATTACH the listed reference image(s).
+ - Work per cat, per emotion: generate the front view first, get it right,
+   then the tqfront (which attaches BOTH the tqfront neutral and your
+   accepted front emotion, so the expression matches across views).
+ - Verify against SPRITE-SPEC-REFERENCE.txt §11, export to 2x/ (256) and
+   1x/ (128) under the exact filename, flip the checklist row to [ADDED].
+
+EMOTION LANGUAGE (from files/01-cats.md: posture and ears carry the read
+at 64 px, faces are secondary — each prompt inlines its own copy)
+ happy    eyes as upward-curved closed arcs, small open smile, ears up and
+          forward, tail up, chest slightly lifted — a content bounce.
+ annoyed  slanted half-lidded eyes with angled brow lines, small frown,
+          ears rotated back, tail mid-flick, slight lean-away.
+ scared   tiny wide-apart dot eyes, small open worried mouth, ears
+          pinned flat, body shrunk/crouched a touch lower, tail wrapped
+          low or puffed.
+ tired    heavy half-closed droopy eyes, flat mouth, ears low and outward,
+          shoulders slumped, whole posture sagging, tail dragging.
+
+-----------------------------------------------------------------------------
+ BISCUIT  (chunky orange tabby, stripes #c67d24 on body #e8a24a, cream muzzle)
+-----------------------------------------------------------------------------
+ 1. cat_biscuit_front_happy.png        [ref: cat_biscuit_front_neutral.png]
+    Character sprite, emotion variant. Redraw the attached Biscuit front
+    view with the HAPPY set: eyes as upward-curved closed arcs, small open
+    smile, ears up and forward, tail up, chest slightly lifted — warm
+    baker's contentment. Same standing pose otherwise.
+
+ 2. cat_biscuit_tqfront_happy.png      [refs: cat_biscuit_tqfront_neutral.png
+                                         + your front_happy]
+    Character sprite, emotion variant, three-quarter view. Apply the exact
+    HAPPY expression from the attached front_happy to the attached
+    three-quarter neutral: curved-arc eyes, open smile, ears forward, tail
+    up. Same tq pose and angle otherwise.
+
+ 3. cat_biscuit_front_annoyed.png      [ref: cat_biscuit_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the ANNOYED set:
+    slanted half-lidded eyes with angled brow lines, small frown, ears
+    rotated back, tail mid-flick, slight lean-away — a tidy cook whose
+    kitchen was disrespected. Same standing pose otherwise.
+
+ 4. cat_biscuit_tqfront_annoyed.png    [refs: tqfront_neutral + your front_annoyed]
+    Three-quarter view. Apply the exact ANNOYED expression from the
+    attached front_annoyed to the tq neutral: half-lidded slanted eyes,
+    frown, ears back, tail flick. Same tq pose and angle otherwise.
+
+ 5. cat_biscuit_front_scared.png       [ref: cat_biscuit_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the SCARED set: tiny
+    wide-apart dot eyes, small open worried mouth, ears pinned flat, body
+    shrunk a touch lower, tail wrapped low — Biscuit fears storms. Same
+    standing spot, feet unmoved.
+
+ 6. cat_biscuit_tqfront_scared.png     [refs: tqfront_neutral + your front_scared]
+    Three-quarter view. Apply the exact SCARED expression from the
+    attached front_scared to the tq neutral: dot eyes, worried mouth, flat
+    ears, slightly crouched. Same tq pose and angle otherwise.
+
+ 7. cat_biscuit_front_tired.png        [ref: cat_biscuit_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the TIRED set: heavy
+    half-closed droopy eyes, flat mouth, ears low and outward, shoulders
+    slumped, tail dragging — a long day at the soup pot. Same standing
+    spot, feet unmoved.
+
+ 8. cat_biscuit_tqfront_tired.png      [refs: tqfront_neutral + your front_tired]
+    Three-quarter view. Apply the exact TIRED expression from the attached
+    front_tired to the tq neutral: droopy eyes, low ears, slump, dragging
+    tail. Same tq pose and angle otherwise.
+
+-----------------------------------------------------------------------------
+ MOSS  (round grey longhair #9aa79a, accents #6f7d70, fluffy chest)
+-----------------------------------------------------------------------------
+ 9. cat_moss_front_happy.png           [ref: cat_moss_front_neutral.png]
+    Character sprite, emotion variant. Redraw the attached Moss front view
+    with the HAPPY set: upward-curved closed arc eyes, easy open smile,
+    ears up, tail up, chest lifted — an optimist's default sunshine. Same
+    standing pose otherwise.
+
+10. cat_moss_tqfront_happy.png         [refs: tqfront_neutral + your front_happy]
+    Three-quarter view. Apply the exact HAPPY expression from the attached
+    front_happy to the tq neutral. Same tq pose and angle otherwise.
+
+11. cat_moss_front_annoyed.png         [ref: cat_moss_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the ANNOYED set:
+    half-lidded slanted eyes, small frown, ears back, tail mid-flick —
+    mild for Moss, more patient disappointment than anger. Same standing
+    pose otherwise.
+
+12. cat_moss_tqfront_annoyed.png       [refs: tqfront_neutral + your front_annoyed]
+    Three-quarter view. Apply the exact ANNOYED expression from the
+    attached front_annoyed to the tq neutral. Same tq pose and angle.
+
+13. cat_moss_front_scared.png          [ref: cat_moss_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the SCARED set: tiny
+    dot eyes, worried open mouth, ears pinned flat, crouched slightly,
+    fluffy fur bristled a touch, tail low. Same standing spot, feet
+    unmoved.
+
+14. cat_moss_tqfront_scared.png        [refs: tqfront_neutral + your front_scared]
+    Three-quarter view. Apply the exact SCARED expression from the
+    attached front_scared to the tq neutral. Same tq pose and angle.
+
+15. cat_moss_front_tired.png           [ref: cat_moss_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the TIRED set: droopy
+    half-closed eyes, flat mouth, low ears, slumped shoulders, long fur
+    hanging heavier, tail dragging — a full day at the pond. Same
+    standing spot, feet unmoved.
+
+16. cat_moss_tqfront_tired.png         [refs: tqfront_neutral + your front_tired]
+    Three-quarter view. Apply the exact TIRED expression from the attached
+    front_tired to the tq neutral. Same tq pose and angle.
+
+-----------------------------------------------------------------------------
+ PEPPER  (wiry black cat #3b3a42, slate highlights #6b6a75, restless energy)
+-----------------------------------------------------------------------------
+17. cat_pepper_front_happy.png         [ref: cat_pepper_front_neutral.png]
+    Character sprite, emotion variant. Redraw the attached Pepper front
+    view with the HAPPY set: curved-arc closed eyes, wide open grin, ears
+    fully perked, tail high with a curl — Pepper's happy is louder than
+    the others', a barely-contained bounce. Same standing pose, feet
+    unmoved.
+
+18. cat_pepper_tqfront_happy.png       [refs: tqfront_neutral + your front_happy]
+    Three-quarter view. Apply the exact HAPPY expression from the attached
+    front_happy to the tq neutral: grin, perked ears, high curled tail.
+    Same tq pose and angle otherwise.
+
+19. cat_pepper_front_annoyed.png       [ref: cat_pepper_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the ANNOYED set:
+    half-lidded slanted eyes, frown, ears back, tail lashing mid-flick —
+    the bored-and-blocked look of a chaos cat told to wait. Same standing
+    pose otherwise.
+
+20. cat_pepper_tqfront_annoyed.png     [refs: tqfront_neutral + your front_annoyed]
+    Three-quarter view. Apply the exact ANNOYED expression from the
+    attached front_annoyed to the tq neutral. Same tq pose and angle.
+
+21. cat_pepper_front_scared.png        [ref: cat_pepper_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the SCARED set: tiny
+    wide-apart dot eyes, open worried mouth, ears pinned flat, crouched
+    low, tail PUFFED to a bottle-brush — the superstitious jolt of a cat
+    who believes in omens. Same standing spot, feet unmoved.
+
+22. cat_pepper_tqfront_scared.png      [refs: tqfront_neutral + your front_scared]
+    Three-quarter view. Apply the exact SCARED expression from the
+    attached front_scared to the tq neutral: dot eyes, flat ears, crouch,
+    puffed tail. Same tq pose and angle.
+
+23. cat_pepper_front_tired.png         [ref: cat_pepper_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the TIRED set: heavy
+    droopy eyes, flat mouth, low ears, deep slump, tail flat on the
+    ground — the total crash after a night of exploring. Same standing
+    spot, feet unmoved.
+
+24. cat_pepper_tqfront_tired.png       [refs: tqfront_neutral + your front_tired]
+    Three-quarter view. Apply the exact TIRED expression from the attached
+    front_tired to the tq neutral. Same tq pose and angle.
+
+-----------------------------------------------------------------------------
+ INK  (white #f2efe6 with ink blotches #2c2a33 — blotch placement NEVER moves)
+-----------------------------------------------------------------------------
+25. cat_ink_front_happy.png            [ref: cat_ink_front_neutral.png]
+    Character sprite, emotion variant. Redraw the attached Ink front view
+    with the HAPPY set, kept quiet and composed: gentle curved-arc closed
+    eyes, the smallest closed smile, ears softly forward, tail up with a
+    calm curve — a librarian's private pleasure, subtler than the other
+    cats. Blotches in their exact original places. Same standing pose.
+
+26. cat_ink_tqfront_happy.png          [refs: tqfront_neutral + your front_happy]
+    Three-quarter view. Apply the exact quiet HAPPY expression from the
+    attached front_happy to the tq neutral. Blotches unmoved. Same tq
+    pose and angle.
+
+27. cat_ink_front_annoyed.png          [ref: cat_ink_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the ANNOYED set, Ink
+    style: barely half-lidded eyes, a flat unimpressed line of a mouth,
+    ears rotated a few degrees back, tail tip flicked — glacial
+    disapproval, not open anger. Blotches unmoved. Same standing pose.
+
+28. cat_ink_tqfront_annoyed.png        [refs: tqfront_neutral + your front_annoyed]
+    Three-quarter view. Apply the exact ANNOYED expression from the
+    attached front_annoyed to the tq neutral. Blotches unmoved. Same tq
+    pose and angle.
+
+29. cat_ink_front_scared.png           [ref: cat_ink_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the SCARED set: tiny
+    wide-apart dot eyes, small open mouth, ears pinned flat, the still
+    watchful posture broken into a slight crouch, tail low — rare and
+    therefore striking on Ink. Blotches unmoved. Same standing spot, feet
+    unmoved.
+
+30. cat_ink_tqfront_scared.png         [refs: tqfront_neutral + your front_scared]
+    Three-quarter view. Apply the exact SCARED expression from the
+    attached front_scared to the tq neutral. Blotches unmoved. Same tq
+    pose and angle.
+
+31. cat_ink_front_tired.png            [ref: cat_ink_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the TIRED set: heavy
+    droopy half-closed eyes, flat mouth, low ears, posture wilted from
+    its usual stillness, tail dragging — dawn after reading until
+    midnight. Blotches unmoved. Same standing spot, feet unmoved.
+
+32. cat_ink_tqfront_tired.png          [refs: tqfront_neutral + your front_tired]
+    Three-quarter view. Apply the exact TIRED expression from the attached
+    front_tired to the tq neutral. Blotches unmoved. Same tq pose and
+    angle.
+
+-----------------------------------------------------------------------------
+ BRAMBLE  (scruffy brown #8a6a44, scruff accents #5f472c, hunched posture)
+-----------------------------------------------------------------------------
+33. cat_bramble_front_happy.png        [ref: cat_bramble_front_neutral.png]
+    Character sprite, emotion variant. Redraw the attached Bramble front
+    view with the HAPPY set, grudging and small: curved-arc closed eyes,
+    a small reluctant smile, ears part-way up, tail lifted only slightly —
+    a cynic caught enjoying something. Keep the hunch. Same standing
+    pose otherwise.
+
+34. cat_bramble_tqfront_happy.png      [refs: tqfront_neutral + your front_happy]
+    Three-quarter view. Apply the exact grudging HAPPY expression from the
+    attached front_happy to the tq neutral. Keep the hunch. Same tq pose
+    and angle.
+
+35. cat_bramble_front_annoyed.png      [ref: cat_bramble_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the ANNOYED set —
+    Bramble's home turf: strongly slanted half-lidded eyes, deep frown,
+    ears rotated well back, scruff slightly risen, tail mid-lash. Same
+    standing pose otherwise.
+
+36. cat_bramble_tqfront_annoyed.png    [refs: tqfront_neutral + your front_annoyed]
+    Three-quarter view. Apply the exact ANNOYED expression from the
+    attached front_annoyed to the tq neutral. Same tq pose and angle.
+
+37. cat_bramble_front_scared.png       [ref: cat_bramble_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the SCARED set: tiny
+    dot eyes, small open worried mouth, ears pinned flat, hunch deepened
+    into a crouch, scruff bristled, tail wrapped low — Bramble fears
+    storms and hates showing it. Same standing spot, feet unmoved.
+
+38. cat_bramble_tqfront_scared.png     [refs: tqfront_neutral + your front_scared]
+    Three-quarter view. Apply the exact SCARED expression from the
+    attached front_scared to the tq neutral. Same tq pose and angle.
+
+39. cat_bramble_front_tired.png        [ref: cat_bramble_front_neutral.png]
+    Character sprite, emotion variant. Redraw with the TIRED set: heavy
+    droopy eyes, flat mouth, low ears, the hunch sagging into a full
+    slump, scruff drooping, tail dragging — a hard worker run empty.
+    Same standing spot, feet unmoved.
+
+40. cat_bramble_tqfront_tired.png      [refs: tqfront_neutral + your front_tired]
+    Three-quarter view. Apply the exact TIRED expression from the attached
+    front_tired to the tq neutral. Same tq pose and angle.
+
+=============================================================================
+ SHARED SPEC FOOTER — paste this after EVERY prompt above, as one message
+=============================================================================
+For a cozy hand-drawn doodle village game, matching the attached
+reference sprite(s) exactly: same character, proportions, markings,
+colors, uneven warm dark-brown hand-inked outline, flat fills, no
+shading, no gradients. Change ONLY the facial expression, ears, tail,
+and the slight posture shift described — the pose, canvas position, and
+scale otherwise stay identical to the neutral reference, with feet
+planted on the exact same baseline (the game swaps sprites with no
+offset). Emotion must read at 64 px from posture and ears more than the
+face. Canvas 256 x 256 px, PNG RGBA, fully transparent background,
+subject ~128–192 px tall, ~10% margin, anchored bottom-center at the
+feet. No props, no scenery, no text, no watermark, no shadow, no border,
+no cropped limbs, clean alpha edges with no white halo. Single frame
+only.
+=============================================================================
+ AFTER BATCH 3: flip the 40 P3 rows in ASSET-CHECKLIST.txt to [ADDED].
+ Wiring (own go-ahead): widen the loader glob past _neutral and pick the
+ sprite by cat.emotion with neutral fallback (smug→neutral, sad→tired per
+ README) — render-only, canvas-renderer.ts.
+ Batch 4 = P4 items & held props (~20 files, 128px canvas). On request.
+=============================================================================

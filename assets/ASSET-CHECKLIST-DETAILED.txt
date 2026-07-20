@@ -1,0 +1,152 @@
+>>> ARCHIVED 2026-07-20 — superseded by the simplified one-image model in ASSET-CHECKLIST.txt. Kept as the full design-doc enumeration for reference. <<<
+=============================================================================
+ WHISKERSTEAD — MASTER ASSET CHECKLIST                    [PROJECT-TRACKED]
+ Added to project: 2026-07-20 · lives in assets/ · referenced by
+ PROJECT-STATE.md task 7 and files/10-universal-action-anim-spec.md
+=============================================================================
+
+HOW TO USE THE MARKERS
+  [ ]      = needed, not yet generated
+  [GEN]    = generated, not yet imported into assets/
+  [ADDED]  = PNG is present in the project (both 2x/ and 1x/ folders)
+  Flip a row to [ADDED] when the files land — that is your "it's in the
+  project" mark. Batch 1 rows are also listed in BATCH-1-PROMPTS.txt.
+
+ENGINE COLUMN
+  READY = the game loads this from disk today (or immediately after the
+          already-approved wiggle step 1 lands). Drop the file in, it shows up.
+  CODE  = renderer change required before this art can be consumed (today it
+          is drawn procedurally in src/render/canvas-renderer.ts). Generate
+          whenever you like, but it will not appear in-game until wired.
+
+Every name below is authored at 2x (256x256 cats, see SPRITE-SPEC-
+REFERENCE.txt for other categories) and exported to BOTH assets/<cat>/2x/
+and /1x/ under the same filename. One row = one filename = two exported files.
+
+-----------------------------------------------------------------------------
+ P1 — BATCH 1: WIGGLE FRAMES (universal action animation)          10 files
+ Consumed automatically by the approved sprite hook. Highest payoff:
+ animates all 23 actions for every cat.                            ENGINE: READY
+-----------------------------------------------------------------------------
+ biscuit
+   [ ] cat_biscuit_wiggle_a.png     frame A — lean/arm-swing left
+   [ ] cat_biscuit_wiggle_b.png     frame B — lean/arm-swing right
+ moss
+   [ ] cat_moss_wiggle_a.png
+   [ ] cat_moss_wiggle_b.png
+ pepper
+   [ ] cat_pepper_wiggle_a.png
+   [ ] cat_pepper_wiggle_b.png
+ ink
+   [ ] cat_ink_wiggle_a.png
+   [ ] cat_ink_wiggle_b.png
+ bramble
+   [ ] cat_bramble_wiggle_a.png
+   [ ] cat_bramble_wiggle_b.png
+
+-----------------------------------------------------------------------------
+ P2 — VISIBLE-STATE POSES (sleep / collapsed) + palette sheet      16 files
+ These states occur every game day and currently use doodle fallbacks.
+ Collapsed MUST read differently from sleep (design spec).   ENGINE: CODE (small)
+ Prompts ready: BATCH-2-PROMPTS.txt
+-----------------------------------------------------------------------------
+ reference (not loaded by the game — consistency tool for all later prompts)
+   [ ] palette_master_sheet.png     18–24 swatches sampled from the 5 shipped
+                                    neutrals + PALETTE in canvas-renderer.ts
+ biscuit
+   [ ] cat_biscuit_sleep_a.png      curled, eyes closed
+   [ ] cat_biscuit_sleep_b.png      breathing variant (boiling line)
+   [ ] cat_biscuit_collapsed.png    splayed, distinct silhouette from sleep
+ moss
+   [ ] cat_moss_sleep_a.png
+   [ ] cat_moss_sleep_b.png
+   [ ] cat_moss_collapsed.png
+ pepper
+   [ ] cat_pepper_sleep_a.png
+   [ ] cat_pepper_sleep_b.png
+   [ ] cat_pepper_collapsed.png
+ ink
+   [ ] cat_ink_sleep_a.png
+   [ ] cat_ink_sleep_b.png
+   [ ] cat_ink_collapsed.png
+ bramble
+   [ ] cat_bramble_sleep_a.png
+   [ ] cat_bramble_sleep_b.png
+   [ ] cat_bramble_collapsed.png
+
+-----------------------------------------------------------------------------
+ P3 — EMOTION VARIANTS (per assets/cats/README.md step 3)          40 files
+ 4 emotions x 2 views x 5 cats. Loader currently hardcodes _neutral;
+ needs a loader + emotion-pick change.                             ENGINE: CODE
+ Prompts ready: BATCH-3-PROMPTS.txt
+-----------------------------------------------------------------------------
+ biscuit   [ ] cat_biscuit_front_happy.png    [ ] cat_biscuit_tqfront_happy.png
+           [ ] cat_biscuit_front_annoyed.png  [ ] cat_biscuit_tqfront_annoyed.png
+           [ ] cat_biscuit_front_scared.png   [ ] cat_biscuit_tqfront_scared.png
+           [ ] cat_biscuit_front_tired.png    [ ] cat_biscuit_tqfront_tired.png
+ moss      [ ] x8 same pattern (front/tqfront x happy/annoyed/scared/tired)
+ pepper    [ ] x8 same pattern
+ ink       [ ] x8 same pattern
+ bramble   [ ] x8 same pattern
+
+-----------------------------------------------------------------------------
+ P4 — CARRIABLE ITEMS & HELD PROPS (files/03-props-items.md)      ~20 files
+ 64x64 authoring. The economy is visible through these.            ENGINE: CODE
+-----------------------------------------------------------------------------
+ fish        [ ] prop_fish_01.png            [ ] prop_fish_flop_a.png
+             [ ] prop_fish_flop_b.png        (flop pair = done-beat star)
+ wood        [ ] prop_wood_01.png            (2–3 sticks tied)
+ vegetable   [ ] prop_veg_herb.png           [ ] prop_veg_tomato.png
+             [ ] prop_veg_mushroom.png       [ ] prop_veg_root.png
+ bread       [ ] prop_bread_01.png
+ soup        [ ] prop_soup_full.png          [ ] prop_soup_empty.png
+ yarn        [ ] prop_yarn_01.png
+ flowers     [ ] prop_flowers_01.png         (also cult offering)
+ trinket     [ ] prop_trinket_01.png
+ junk        [ ] prop_junk_boot.png          [ ] prop_junk_can.png
+ rod         [ ] prop_rod_01.png             (held prop, line+bobber separate)
+ ladle       [ ] prop_ladle_01.png
+ book        [ ] prop_book_open.png          [ ] prop_book_closed.png
+
+-----------------------------------------------------------------------------
+ P5 — BUILDINGS & WORLD (files/02-buildings.md)                   ~42 files
+ 256x256 (384 pond). Idle + active overlay as separate layers.     ENGINE: CODE
+-----------------------------------------------------------------------------
+ soup station [ ] bldg_soupstation_idle.png  [ ] bldg_soupstation_pot_empty.png
+              [ ] bldg_soupstation_pot_cooking.png (steam overlay)
+              [ ] bldg_soupstation_pot_ready.png
+ bonfire      [ ] bldg_bonfire_unlit.png     [ ] bldg_bonfire_lit_a.png
+              [ ] bldg_bonfire_lit_b.png     (2-frame flicker)
+ pond (384)   [ ] bldg_pond_still.png        [ ] bldg_pond_ripple_a.png
+              [ ] bldg_pond_ripple_b.png     [ ] bldg_pond_splash.png (accident)
+ bakery       [ ] bldg_bakery_idle.png       [ ] bldg_bakery_smoke.png (overlay)
+ library      [ ] bldg_library_idle.png      [ ] bldg_library_glow.png (overlay)
+ market       [ ] bldg_market_stocked.png    [ ] bldg_market_empty.png
+ houses x5    [ ] bldg_house_<cat>_pile.png / _frame.png / _done.png
+              (3 build stages x 5 personality-flavored houses = 15)
+ forage x3    [ ] bldg_forage_bush.png       [ ] bldg_forage_mushlog.png
+              [ ] bldg_forage_herb.png       (seasonal skins deferred to M5)
+ artifact     [ ] site_artifact_hidden.png   [ ] site_artifact_revealed.png
+              [ ] site_artifact_shrine.png   (reserved pale-violet accent)
+ trees        [ ] env_tree_round.png         [ ] env_tree_twoblob.png
+              [ ] env_tree_pine.png          [ ] env_tree_stump.png
+              (growth scaling stays procedural — no extra frames needed)
+
+-----------------------------------------------------------------------------
+ P6 — GROUND, UI, EFFECTS, CULT SET (files 02/03/04/05)           ~18 files
+                                                                   ENGINE: CODE
+-----------------------------------------------------------------------------
+ ground     [ ] tile_grass_256.png (seamless)  [ ] path_straight / _curve / _end
+ bubbles    [ ] ui_bubble_speech.png  [ ] ui_bubble_thought.png
+            [ ] ui_bubble_gossip.png  [ ] ui_intent_icons (sheet)
+ effects    [ ] fx_steam_a/b.png   [ ] fx_rain_streak.png  [ ] fx_sparkle.png
+ cult set   [ ] prop_offering_pile.png  [ ] decal_cult_symbol.png
+            [ ] prop_candle.png
+ scatter    [ ] decal_flowers / _pebbles / _spill (B-priority seasoning)
+
+-----------------------------------------------------------------------------
+ TOTALS      P1 10 · P2 16 · P3 40 · P4 ~20 · P5 ~42 · P6 ~18  ≈ 146 names
+             (x2 export folders ≈ 292 PNG files)
+ Deferred    seasonal skins, festival/memorial, rescue-carry, micro-poses,
+             full walk cycles (squash-stretch covers walking today)
+=============================================================================
