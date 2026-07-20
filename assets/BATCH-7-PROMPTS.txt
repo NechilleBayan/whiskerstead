@@ -1,0 +1,89 @@
+=============================================================================
+ WHISKERSTEAD — BATCH 7 IMAGE-GENERATION PROMPTS           [PROJECT-TRACKED]
+ Added to project: 2026-07-20 · lives in assets/ · one-image model,
+ OPTIONAL batch. Produces the 2 checklist P4 ground files:
+     tile_grass.png · decal_path.png
+ These are polish: the current procedural ground (flat green + scribble
+ tufts) is spec-compliant, so only import these if they genuinely look
+ better in-game. Everything else in the required 26-image set is covered
+ by batches 4–6.
+ ENGINE NOTE: CODE — drawGround() is procedural today; the world-image
+ loader wiring (M4 of the implementation handoff) can add a tile-repeat
+ path for these with the same graceful fallback.
+=============================================================================
+
+HOW TO USE
+ - Two prompts, fully self-contained. ATTACH as style-only references:
+   cat_biscuit_front_neutral.png + your approved env_tree.png (and
+   bldg_pond.png if it exists — ground must sit quietly under all of it).
+ - SEAMLESS WARNING: generators are unreliable at tiling. Acceptance test
+   before importing: tile the grass output 2x2 in any editor and inspect
+   the joins at 100% and at game zoom — any visible seam, repeating
+   "landmark" blob, or brightness gradient across the tile = reject and
+   re-roll. Test the path decal overlaid on the tiled grass.
+ - Export: tile_grass 512 → assets/world/2x/, 256 → /1x/ (downscale keeps
+   seamlessness). decal_path 256 → 2x/, 128 → /1x/. Flip the P4 rows to
+   [ADDED] only if you decide to use them.
+
+-----------------------------------------------------------------------------
+ PROMPT 1 — tile_grass.png                                  canvas 512 x 512
+-----------------------------------------------------------------------------
+Seamlessly tileable terrain texture for a cozy hand-drawn doodle village
+sim. Match the art style of the attached reference sprites — hand-drawn
+doodle linework, flat slightly-desaturated fills, no gradients — but
+this is BACKGROUND texture: it must stay far quieter than everything
+drawn on top of it.
+
+Subject: a soft meadow-green ground tile. Base is a flat fill of sage
+green #c3d6b4, scattered with small hand-scribbled grass tufts (2–3
+short curved pencil strokes each) in the slightly deeper green #b7cca7,
+plus a few even subtler single-stroke flecks. Low contrast throughout —
+the tufts should nearly disappear at a glance; charm shows only when you
+look. No flowers, no stones, no dirt patches, no clover, no shadows, no
+lighting variation.
+
+Tiling requirements (critical): the image MUST tile seamlessly in all
+directions — left edge continues the right edge exactly, top continues
+bottom; no tuft may touch or cross any canvas edge unless it wraps
+correctly to the opposite side; even, uniform tuft distribution with no
+clusters, no bare "landmark" zones, and no brightness or hue gradient
+across the tile (any of these becomes a visible repeating pattern when
+tiled across the whole map).
+
+Canvas 512 x 512 px, PNG, fully OPAQUE (this is the ground itself — no
+transparency, full-bleed color to every edge). Flat colors only, no
+texture noise, no photographic grain, no text, no watermark, no border.
+
+-----------------------------------------------------------------------------
+ PROMPT 2 — decal_path.png                                  canvas 256 x 256
+-----------------------------------------------------------------------------
+Terrain overlay decal for a cozy hand-drawn doodle village sim, matching
+the attached reference sprites' hand-drawn doodle style — flat fills, no
+gradients.
+
+Subject: ONE straight segment of worn dirt path, drawn as a single
+horizontal stroke across the middle of the canvas: dusty warm earth
+brown #c2a97f with a few sparse darker speckles (#a8895e) suggesting
+trodden ground. This one segment is the game's ENTIRE path system —
+code chains it end to end and rotates it to turn corners — so both the
+LEFT and RIGHT ends must be cleanly cut at the canvas edges with
+matching height and shape (end-to-end copies must join without a bump),
+while the long top and bottom edges are soft, irregular, wobbly
+hand-drawn borders that fade slightly (light feathering) so the path
+melts into grass when overlaid.
+
+Path stroke ~70 px thick, centered vertically, running the full 256 px
+width edge to edge. PNG RGBA: TRANSPARENT above and below the path,
+opaque path body with softly feathered long edges only (the two cut
+ends stay crisp and full-height). No grass drawn in this image, no
+stones, no footprints, no text, no watermark, no shadow, no border.
+
+=============================================================================
+ AFTER BATCH 7: only flip the P4 rows to [ADDED] if the in-game look
+ wins over the procedural ground — this batch is optional by design.
+ Wiring: tile-repeat draw in drawGround() + path decal chaining, folded
+ into the world-image loader (M4) with the same missing-file fallback.
+ This is the LAST planned batch — the asset set is complete: P1 layers
+ (batch 4), P2 buildings (batch 5), P3 items (batch 6), P4 optional
+ ground (batch 7). Cats need no art, ever.
+=============================================================================

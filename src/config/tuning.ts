@@ -262,6 +262,32 @@ export const CAMPFIRE = {
   replyChance: 0.5, // odds a campfire_talk line draws one seated-neighbor reply
 } as const;
 
+/** Universal action animation — 10-universal-action-anim-spec. One wiggle for
+ *  every perform-phase action (sleep/collapsed keep their distinct silhouettes)
+ *  plus the "got it!" done beat. All render-side; the frame clock runs on SIM
+ *  time so fast-forward scales it and pause freezes it. */
+export const ANIM = {
+  wiggleFrameMs: 260, // one wiggle half-cycle (A→B)
+  wiggleTiltRad: 0.1, // procedural tilt of the neutral sprite, ± about the feet
+  doneMs: 900, // how long the "got it!" beat holds
+  doneItemLiftU: 30, // item icon raised above the head during the beat
+  doneItemScale: 1.15, // slight pop on the held-up icon
+  /** One-image sleep pose: neutral sprite laid on its side, breathing slowly.
+   *  Period/amplitude of the squish (sim-time, so pause freezes breathing). */
+  sleepBreatheMs: 1600,
+  sleepBreatheAmp: 0.04,
+  /** One-image collapsed pose: laid FLAT + splayed askew + motionless — the
+   *  spec's hard rule is that collapsed must NOT read as sleep, so it is much
+   *  flatter than the sleep pose, stretched wider, and never breathes. */
+  collapsedFlatten: 0.45,
+  collapsedStretch: 1.25,
+  collapsedSplayRad: 0.18,
+  /** layer_fire squish-bounce flicker (the "walk squish" of fire): two-phase
+   *  on the SIM clock, vertical stretch with matching horizontal narrow. */
+  fireFlickerMs: 240,
+  fireFlickerAmp: 0.12,
+} as const;
+
 /** Near-death floors — spec §9. Condition never falls below this. */
 export const HEALTH = {
   criticalFloor: 0.12,

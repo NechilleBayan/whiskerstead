@@ -2,7 +2,7 @@
 // This registry is what the decision loop scores and rolls over.
 
 import { ACTION_MS, BUILDCFG, CAMPFIRE, CULT, FISH_TIERS, OUST, SOUP, HEALTH, THEFT, TREES } from "../../config/tuning.ts";
-import { feed, rest } from "../needs.ts";
+import { boost, feed, rest } from "../needs.ts";
 import { distance } from "../perception.ts";
 import { nudgeRel } from "../relationships.ts";
 import { preferenceFactor } from "../scoring.ts";
@@ -10,6 +10,7 @@ import { choppableTrees } from "../trees.ts";
 import type { Building, CatState, Item, Site, WorldState } from "../types.ts";
 import type { ActionDef } from "./types.ts";
 import { reconcile } from "./reconcile.ts";
+import { clamp, trait, writeMemory } from "./util.ts";
 
 // ---------- helpers ----------
 
@@ -34,18 +35,8 @@ function buildings(world: WorldState, type: string): Building[] {
 function home(cat: CatState, world: WorldState): Building | undefined {
   return world.buildings.find((b) => b.owner === cat.id);
 }
-function writeMemory(cat: CatState, subject: string, event: string, charge: number, now: number) {
-  cat.memory.push({ subject, event, charge, at: now });
-  if (cat.memory.length > 40) cat.memory.shift();
-}
-function clamp(lo: number, hi: number, v: number) {
-  return v < lo ? lo : v > hi ? hi : v;
-}
 function otherCats(cat: CatState, world: WorldState): CatState[] {
   return world.cats.filter((c) => c.id !== cat.id && !c.grabbed);
-}
-function trait(cat: CatState, t: string): boolean {
-  return cat.identity.traits.includes(t);
 }
 /** Cats OTHER than `cat` currently seated (bonfire perform) within `reach` of a
  *  given fire — the gathering lever (06-dialogue M4 §C). Pure read over
@@ -76,7 +67,7 @@ const wander: ActionDef = {
   }),
   duration: ({ rng }) => rng.range(2500, 5000),
   onComplete: ({ cat }) => {
-    cat.needs.curiosity = Math.min(1, cat.needs.curiosity + 0.08);
+    boost(cat, "curiosity", 0.08);
     cat.emotion = "neutral";
   },
   bubble: () => undefined,
@@ -342,8 +333,8 @@ const socialize: ActionDef = {
   onComplete: ({ cat, world, target, rng, emit, now }) => {
     const other = target as CatState;
     if (!other) return;
-    cat.needs.social = Math.min(1, cat.needs.social + 0.5);
-    other.needs.social = Math.min(1, other.needs.social + 0.35);
+    boost(cat, "social", 0.5);
+    boost(other, "social", 0.35);
     // Outcome depends on relationship + mood; can befriend or argue.
     const rel = cat.relationships[other.id] ?? 0;
     const argueChance = 0.12 + (rel < 0 ? 0.2 : 0) + (cat.needs.hunger < 0.3 ? 0.1 : 0);
@@ -416,8 +407,8 @@ const bonfireGather: ActionDef = {
   },
   onComplete: ({ cat, target }) => {
     const lit = ((target as Building)?.state?.lit as number) === 1;
-    cat.needs.comfort = Math.min(1, cat.needs.comfort + (lit ? 0.4 : 0.15));
-    cat.needs.social = Math.min(1, cat.needs.social + 0.2);
+    boost(cat, "comfort", lit ? 0.4 : 0.15);
+    boost(cat, "social", 0.2);
     cat.emotion = lit ? "happy" : "neutral";
   },
   bubble: () => "warm by the fire",
@@ -437,8 +428,8 @@ const read: ActionDef = {
   duration: ({ rng }) => rng.range(9000, 16000),
   onStart: ({ target }) => ((target as Building).active = true),
   onComplete: ({ cat }) => {
-    cat.needs.curiosity = Math.min(1, cat.needs.curiosity + 0.5);
-    cat.needs.comfort = Math.min(1, cat.needs.comfort + 0.2);
+    boost(cat, "curiosity", 0.5);
+    boost(cat, "comfort", 0.2);
     cat.emotion = "neutral";
   },
   bubble: () => "…",
@@ -463,7 +454,7 @@ const explore: ActionDef = {
   },
   duration: ({ rng }) => rng.range(4000, 8000),
   onComplete: ({ cat, world, target, rng, emit }) => {
-    cat.needs.curiosity = Math.min(1, cat.needs.curiosity + 0.2);
+    boost(cat, "curiosity", 0.2);
     const site = target as Site | undefined;
     if (site && !site.discovered) {
       let chance = CULT.baseDiscoveryChance;
@@ -528,7 +519,7 @@ const artifactVisit: ActionDef = {
   },
   duration: ({ rng }) => rng.range(5000, 9000),
   onComplete: ({ cat, world, rng, emit }) => {
-    cat.needs.comfort = Math.min(1, cat.needs.comfort + 0.2);
+    boost(cat, "comfort", 0.2);
     const site = world.sites.find((s) => s.discovered);
     // Founding: first cat to form belief + recruit becomes founder (spec §7).
     if (!world.cult && (cat.identity.personality === "cryptic" || cat.identity.personality === "chaos")) {
@@ -699,7 +690,7 @@ const build: ActionDef = {
     if (stage >= BUILDCFG.stages - 1) {
       emit({ type: "built", cat: cat.id, building: h.id });
       writeMemory(cat, h.id, "my home", 0.4, now);
-      cat.needs.comfort = Math.min(1, cat.needs.comfort + 0.35);
+      boost(cat, "comfort", 0.35);
       cat.emotion = "happy";
     }
   },
@@ -882,8 +873,8 @@ const gossip: ActionDef = {
     juicy.charge *= 0.7; // old news fades — the same story won't fuel gossip forever
     nudgeRel(cat, other.id, 0.02, emit);
     nudgeRel(other, cat.id, 0.02, emit);
-    cat.needs.social = Math.min(1, cat.needs.social + 0.35);
-    other.needs.social = Math.min(1, other.needs.social + 0.2);
+    boost(cat, "social", 0.35);
+    boost(other, "social", 0.2);
   },
 };
 
@@ -907,7 +898,7 @@ const chase: ActionDef = {
   }),
   duration: ({ rng }) => rng.range(3500, 6500),
   onComplete: ({ cat }) => {
-    cat.needs.curiosity = Math.min(1, cat.needs.curiosity + 0.25);
+    boost(cat, "curiosity", 0.25);
     cat.emotion = "happy";
   },
 };
@@ -936,9 +927,9 @@ const comfort: ActionDef = {
   onComplete: ({ cat, target, emit, now }) => {
     const other = target as CatState;
     if (!other) return;
-    other.needs.comfort = Math.min(1, other.needs.comfort + 0.35);
-    cat.needs.social = Math.min(1, cat.needs.social + 0.3);
-    other.needs.social = Math.min(1, other.needs.social + 0.3);
+    boost(other, "comfort", 0.35);
+    boost(cat, "social", 0.3);
+    boost(other, "social", 0.3);
     nudgeRel(other, cat.id, 0.08, emit);
     nudgeRel(cat, other.id, 0.05, emit);
     writeMemory(other, cat.id, `${cat.identity.name} sat with me`, 0.25, now);

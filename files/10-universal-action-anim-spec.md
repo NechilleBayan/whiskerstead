@@ -192,4 +192,159 @@ Each step is independently shippable and verified before the next (rule 4).
   busy holding up the catch (stealable window, duration in sim time). Touches
   `CatAction` phases, serialization, tests.
 - Hand-drawn `cat_<name>_wiggle_a/b.png` frames (auto-upgrade via §1.2 hook).
+  → **Biscuit reinstated 2026-07-20, see Addendum A**; other cats remain open.
 - Simplification candidates 4–7 (§4).
+
+## 7. Addendum A — hand-drawn wiggle frames (2026-07-20)
+
+User decision: the "procedural-only, no `wiggle_[ab]` loader widening" call is
+REVERSED for wiggle pairs. When `cat_<name>_wiggle_a.png` **and** `_b.png` both
+exist in `assets/cats/2x/`, the perform-phase wiggle swaps those two frames on
+the existing sim-time clock instead of tilting the neutral sprite; cats without
+a complete pair keep the procedural tilt exactly as shipped.
+
+### Approach
+
+Two small passes, code first (the loader hook is inert until files exist, same
+pattern as the M4 world-sprite wiring):
+
+- **M-A (builder, code):** widen the cat loader + amend the `drawCat` wiggle
+  branch in `src/render/canvas-renderer.ts`. Render-only; `src/sim/` untouched;
+  no new tuning keys.
+- **M-B (asset normalization):** re-canvas the two Biscuit raws from
+  `assets/raw/` to spec and ship to `assets/cats/{2x,1x}/`.
+
+### M-A — code changes (`src/render/canvas-renderer.ts` only)
+
+**A1. Loader**
+
+- Add a second `import.meta.glob` beside `CAT_SPRITE_URLS` (globs must be
+  static strings): `"../../assets/cats/2x/cat_*_wiggle_*.png"` with the same
+  `{ eager, query: "?url", import: "default" }` options.
+- Match paths with `/cat_([a-z]+)_wiggle_([ab])\.png$/` and store into the
+  **existing** `catSprites` map under keys `${name}_wiggle_a` /
+  `${name}_wiggle_b`. No collision with `${name}_${view}` keys (no view is
+  named `wiggle_a`).
+- Private helper `wigglePair(catId): { a, b } | undefined` — returns the pair
+  **only if both images exist, are `complete`, and have `naturalWidth > 0`**.
+  Anything less (one file, still decoding, broken) → `undefined` → procedural
+  fallback. This is the entire per-cat fallback rule; no config, no lists.
+
+**A2. `drawCat` wiggle branch**
+
+Behavioral contract — everything not listed is byte-for-byte today's behavior:
+
+- `wiggling` predicate unchanged (`!beat && !cat.grabbed && phase === "perform"
+  && !WIGGLE_EXEMPT.has(id)`).
+- Frame clock unchanged — `Math.floor(world.time / ANIM.wiggleFrameMs) % 2`,
+  sim time. Parity 0 → frame **a**, parity 1 → frame **b** (matches today's
+  parity-0 = `-wiggleTiltRad` left lean; frame A is authored as the left lean).
+- **When `wigglePair(cat.id)` resolves and the cat is wiggling:**
+  - Draw the a/b frame as `img` instead of the neutral. **Procedural tilt is
+    fully dropped** (`tilt = 0`) — the frames encode the lean; residual
+    rotation would double-lean and read as drift.
+  - **View:** frames are front-view art and win over `anim.view` for the
+    duration of the wiggle — same rule as the done beat. Accepted consequence:
+    a cat that starts performing before the stop-hold elapses pops tqfront →
+    front one transition earlier than today (same transition that already
+    happens at every full stop). Do NOT gate frames on `anim.view === "front"`
+    (art-style swap mid-wiggle is worse).
+  - **Mirroring:** keep `ctx.scale(-anim.dir, 1)` exactly as today (the a/b
+    rock is symmetric; mirroring merely swaps which half-cycle shows which
+    lean — visually identical).
+  - **Strained squish:** unchanged — frames go through the same
+    `h = SPRITE_H * (strained ? 0.94 : 1)` and baseline drop. Walk-squish
+    suppression (`wob = 0` while wiggling): unchanged.
+  - **Inventory item icon** and **done-beat priority** unchanged; frames never
+    draw during a beat.
+- **When the pair is absent** (moss/pepper/ink/bramble, or mid-decode): the
+  current procedural tilt path runs unmodified, including the doodle-fallback
+  tilt for sprite-less cats.
+- Update the §1.2 comment block above the branch to mention the sprite upgrade.
+
+No changes to `src/config/tuning.ts` (`wiggleFrameMs` reused; `wiggleTiltRad`
+stays for fallback cats), `src/main.ts`, or `src/sim/**`.
+
+### M-B — asset normalization (Biscuit only)
+
+Inputs: `assets/raw/cat_biscuit_wiggle_{a,b}.png` (RGBA, transparent,
+~1024×1254 raw generator canvas, off-registration). Outputs:
+`assets/cats/2x/cat_biscuit_wiggle_{a,b}.png` (256×256) and `assets/cats/1x/…`
+(128×128, clean 50% downscale per SPRITE-SPEC-REFERENCE §6). Engine reads 2x
+only; 1x ships for convention parity.
+
+Process (art-import-wave-1 precedent — raws are re-canvased, never straight-
+copied):
+
+1. **Measure the reference** `assets/cats/2x/cat_biscuit_front_neutral.png`:
+   subject alpha bbox (threshold α ≥ 8), lowest opaque row = feet baseline
+   `yRef`, x-centroid of the feet region (bottom ~10% of subject rows) = `xRef`.
+2. **Measure each raw** the same way.
+3. **One shared scale factor for both frames** (a/b must not breathe in size):
+   start from `subjectHeight(ref) / subjectHeight(rawA)`, apply identically to
+   B, visually compare against the neutral at display size (~64–96 px), adjust
+   within ±5% if the lean makes height misleading. Lock one number for both.
+4. **Placement:** feet-region x-centroid → `xRef`; lowest opaque row → `yRef`.
+   Aligning by the feet region (not the full bbox, which the head lean skews)
+   guarantees the §11 "flip shows only intended movement" check. Same rule for
+   both frames.
+5. **Tooling:** throwaway script in the session scratchpad (PowerShell
+   `System.Drawing` or equivalent). No npm dependencies; script not committed.
+   Raws stay archived in `assets/raw/` as sources, now marked imported.
+
+### Acceptance criteria
+
+**M-A (before M-B lands — hook must be inert):**
+- `npm run typecheck`, `npm test` (untouched — render-only), `npm run build`
+  all green.
+- Dev server: all 5 cats wiggle procedurally exactly as before; sleep/
+  collapsed/done-beat/walk unchanged; F fast-forward still scales the wiggle.
+
+**M-B (per SPRITE-SPEC §11 plus this feature):**
+- Both 2x files 256×256 RGBA, all four corner pixels α = 0, nothing clipped.
+- Feet baseline within ±2 px of the neutral's `yRef`; subject scale visually
+  matches the neutral side-by-side at display size.
+- A/B flip test (offline pixel diff): changed pixels concentrated in the upper
+  body; feet-band (bottom ~20% of subject) diff a small fraction of the
+  head-band diff (M1 precedent shape: feet 29 px vs head 509 px).
+- In-browser probe (`window.__renderer` / `window.__sim`, D overlay, F):
+  Biscuit mid-perform draws the frames (opposite-frame pixel diff well above
+  same-frame noise, per the M1 probe pattern), **no rotation applied**; the
+  other four cats still tilt procedurally; frame swap freezes on pause and
+  speeds under F; temporarily removing the two files restores Biscuit's
+  procedural tilt.
+- `npm run build` green with the files in place.
+
+### Doc updates (part of the milestones, not optional)
+
+1. This file — done by this addendum (§1.2 hook reinstated, §6 annotated).
+2. `assets/SPRITE-SPEC-REFERENCE.txt` §5 — add: *"Exception (locked
+   2026-07-20b): `cat_<name>_wiggle_<a|b>.png` is the ONE sanctioned frame
+   pair. A complete pair auto-upgrades that cat's perform-phase wiggle;
+   missing pair = procedural tilt. Everything else remains one-image."*
+3. `assets/ASSET-CHECKLIST.txt` — P0 banner softened (wiggle pairs are the
+   sole permitted cat art); `wiggle` row reworded to "procedural fallback;
+   hand-drawn a/b pair auto-upgrades per cat"; P1 IMPORT NOTE's "NEVER-import"
+   clause for wiggle frames removed; cancelled-list drops "wiggle frames".
+4. `assets/ASSET-CHECKLIST-DETAILED.txt` — flip the two biscuit wiggle rows to
+   `[ADDED]` with import note; other cats' rows stay `[ ]` (ENGINE: READY).
+5. `assets/BATCH-1-PROMPTS.txt` — amend the CANCELLED banner: wiggle-frame
+   prompts reinstated; all other cancelled cat prompts remain cancelled.
+6. `CLAUDE.md` (project) — the "never propose new cat sprites" sentence gets a
+   wiggle-pair exception, or future sessions will fight this change.
+7. `PROJECT-STATE.md` — log entry under item 7's build log.
+
+### Edge cases
+
+- Only one of a/b present → procedural (pair helper requires both ready).
+- Sprites decoding on first frames after load → procedural until `complete`.
+- Grabbed / done beat / sleep / collapsed → wiggle (either kind) never draws.
+- Strained/critical cat with frames → same 0.94 squish + baseline drop.
+- Save/load, determinism, tests: zero sim surface; clock stays on `world.time`.
+
+### Out of scope
+
+- Wiggle frames for moss/pepper/ink/bramble (plug-and-play once generated from
+  BATCH-1 prompts — drop files in, zero code).
+- Sleep/collapsed frame pairs (still procedural, §7 P2 reserved names only).
+- Any new cat art proposals; any `src/sim/` change; real "retrieve" phase.

@@ -18,10 +18,14 @@ THE MODEL (locked 2026-07-20)
                (tree variety, owner-colored houses).
 
 MARKERS   [ ] to generate · [GEN] generated, not imported · [ADDED] in repo
-ENGINE    every non-cat row is CODE: the renderer draws these procedurally
-          today and has no image loader for them yet. Wiring = one generic
-          loader + a draw-swap per row, render-only, its own go-ahead.
-          Generate art freely meanwhile.
+ENGINE    WIRED (2026-07-20): generic loader over assets/world/{2x,1x}
+          covers every row below, keyed by filename; missing files fall back
+          to the procedural drawings per-file. To import art: pass the §11
+          acceptance checklist, then drop the PNG into assets/world/2x/ and
+          1x/ under its canonical name — the game picks it up on reload.
+          Registration offsets are named constants atop canvas-renderer.ts.
+          (decal_path loads but has no draw site yet — the sim has no path
+          data; prop_rod/ladle/book load, held-prop poses are future work.)
 SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
           Export 2x + 1x, same filename, per SPRITE-SPEC-REFERENCE.txt.
 
@@ -31,10 +35,10 @@ SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
  [ADDED] cat_<name>_front_neutral.png / cat_<name>_tqfront_neutral.png ×5
  All states are code transforms of these 10 sprites:
    walk        squash-stretch bounce                    (shipped)
-   wiggle      2-phase tilt at the feet                 (anim step 1, approved)
-   done beat   sprite + item icon lifted overhead       (anim step 2, approved)
-   sleep       sprite laid on its side + slow breathing squish      (to wire)
-   collapsed   laid flat + extra flatten/splay — must not read as sleep (to wire)
+   wiggle      2-phase tilt at the feet                 (shipped 2026-07-20)
+   done beat   sprite + item icon lifted overhead       (shipped 2026-07-20)
+   sleep       sprite laid on its side + slow breathing squish (shipped 2026-07-20)
+   collapsed   laid flat + extra flatten/splay ≠ sleep  (shipped 2026-07-20)
    emotions    speech/thought bubbles + procedural eye overlays     (to wire)
    facing      mirror scaleX                            (shipped)
 
@@ -42,16 +46,23 @@ SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
  P1 — REUSABLE LAYERS (the composition kit)                         4 files
  Prompts ready: BATCH-4-PROMPTS.txt (5 prompts, decompose pattern)
 -----------------------------------------------------------------------------
- [ ] layer_fire.png       flame only, transparent. Code: squish-bounce
+ [ADDED] layer_fire.png   flame only, transparent. Code: squish-bounce
                           flicker (the "walk squish" of fire). Reused:
                           bonfire lit, soup-station cooking, future candles.
- [ ] layer_woodpile.png   low stack of logs. Reused: bonfire base (unlit =
+ [ADDED] layer_woodpile.png low stack of logs. Reused: bonfire base (unlit =
                           this alone), house build stage 0 materials pile.
- [ ] env_tree.png         ONE tree. Code: growth/regrow scale (shipped),
+ [ADDED] env_tree.png     ONE tree. Code: growth/regrow scale (shipped),
                           flip + lean + slight hue shift for variety —
                           replaces the 3 hand variants.
- [ ] env_stump.png        post-chop. Regrowth = env_tree scaling back up
+ [ADDED] env_stump.png    post-chop. Regrowth = env_tree scaling back up
                           (shipped logic).
+ IMPORT NOTE (2026-07-20): the four P1 files + P4 were normalized on import —
+ raw generator output (1024/1254 px, off-registration) was re-canvased to
+ spec (base on the 90% line, flame base / pile top on the shared 60% line,
+ tree ~78% of canvas, stump ~30px-equivalent) and exported 256/128. Raw
+ sources archived in assets/raw/ (incl. env_pinetree.png, an unimported
+ spare second tree — canon is ONE tree — and the two cat wiggle frames,
+ which stay NEVER-import per the one-image model).
 
 -----------------------------------------------------------------------------
  P2 — BUILDINGS (one image each; states composed in code)           8 files
@@ -95,11 +106,15 @@ SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
 
 -----------------------------------------------------------------------------
  P4 — OPTIONAL GROUND (only if the code look wears thin)            2 files
+ Prompts ready: BATCH-7-PROMPTS.txt (seamless-tile test before import)
 -----------------------------------------------------------------------------
- [ ] tile_grass.png       256 seamless. Current procedural scribble tufts
-                          are fine — generate only if wanted.
- [ ] decal_path.png       one worn-dirt stroke; chains/curves by rotated
-                          repeated draws.
+ [ADDED] tile_grass.png   256 seamless. LIVE — replaces the scribble tufts.
+                          Edge probe: top-bottom seam clean (max Δ6),
+                          left-right soft (max Δ37) — watch for vertical
+                          seams in-game; revert = delete from assets/world/.
+ [ADDED] decal_path.png   one worn-dirt stroke; chains/curves by rotated
+                          repeated draws. Loads but UNWIRED — the sim has
+                          no path data yet.
 
 -----------------------------------------------------------------------------
  NEVER ASSETS (stays code forever)

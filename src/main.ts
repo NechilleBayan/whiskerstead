@@ -5,6 +5,7 @@ import { CanvasRenderer } from "./render/canvas-renderer.ts";
 import { Simulation } from "./sim/simulation.ts";
 import { createWorld } from "./sim/world.ts";
 import { phaseAt } from "./sim/time.ts";
+import type { GameEvent } from "./sim/events.ts";
 
 const SAVE_KEY = "whiskerstead-save-v1";
 
@@ -29,6 +30,25 @@ const canvas = document.getElementById("stage") as HTMLCanvasElement;
 const debugEl = document.getElementById("debug") as HTMLPreElement;
 const sim = boot();
 const renderer = new CanvasRenderer(canvas);
+
+// ---- done beat (anim spec §1.3): the ONE declarative yield→icon map ----
+// The renderer stays a pure snapshot-reader, so the bus wiring lives here and
+// forwards yields to renderer.noteYield. Actions with no entry (wander, read,
+// socialize, …) just end — no beat. `steal` is deliberately excluded: a thief
+// holding up the loot defeats the sneak. Adding a future yield is one line.
+const YIELD_EVENTS: { [T in GameEvent["type"]]?: (e: Extract<GameEvent, { type: T }>) => string | undefined } = {
+  fished: (e) => (e.result === "catch" ? "fish" : undefined), // miss = no beat
+  chopped: () => "wood",
+  gathered: () => "vegetable",
+  cooked: () => "soup",
+  scavenged: (e) => e.item,
+};
+for (const [type, pick] of Object.entries(YIELD_EVENTS)) {
+  sim.bus.on(type as GameEvent["type"], (e) => {
+    const item = (pick as (e: GameEvent) => string | undefined)(e);
+    if (item) renderer.noteYield((e as GameEvent & { cat: string }).cat, item);
+  });
+}
 
 let fast = false;
 let showDebug = false;

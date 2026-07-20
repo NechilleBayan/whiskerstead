@@ -41,6 +41,13 @@ export function updateHealthStage(cat: CatState): string {
   return stage;
 }
 
+/** Boost a need by `delta`, capped at full satisfaction — the shared shape of
+ *  every action's onComplete reward (anim spec §4 candidate 2). Deltas are
+ *  positive; the arithmetic is exactly the old inline Math.min(1, v + d). */
+export function boost(cat: CatState, need: NeedId, delta: number): void {
+  cat.needs[need] = Math.min(1, cat.needs[need] + delta);
+}
+
 /** Feed the cat: restore hunger and a little condition. */
 export function feed(cat: CatState, amount: number): void {
   cat.needs.hunger = clamp01(cat.needs.hunger + amount);

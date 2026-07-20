@@ -1,13 +1,15 @@
 # PROJECT-STATE
 
 ## Current milestone
-**Dialogue arc COMPLETE (M0–M4)** as of 2026-07-18. Commits: M0 `3e70a4b`,
-M1 `ddacb2c`, M2 wave 1 `7845ff7`, M2 wave 2 `a7a720a`, M3 `1aaacb6`,
-M4-A `9084883`, M4-B `37f9a29`, M4-C `1c509c0`. Full suite 73/73 green,
-typecheck clean. **Nothing in progress.** The only remaining roadmap items are
-gated: **M5** (seasons / festival / add-a-cat arrivals) — each behind its OWN
-explicit go-ahead per the locked filters — and small logged cleanups (see
-Known issues). Do not start M5 without the user's go-ahead.
+**Universal action animation + one-image asset wiring COMPLETE (task 7,
+M1–M5)** as of 2026-07-20, uncommitted — see task 7 build log. Before that:
+dialogue arc complete (M0–M4, 2026-07-18; commits M0 `3e70a4b`, M1 `ddacb2c`,
+M2w1 `7845ff7`, M2w2 `a7a720a`, M3 `1aaacb6`, M4 `9084883`/`37f9a29`/
+`1c509c0`). Full suite 73/73 green, typecheck clean, build green. The only
+remaining roadmap items are gated: **M5 expansion** (seasons / festival /
+add-a-cat arrivals) — each behind its OWN explicit go-ahead per the locked
+filters — and small logged cleanups (see Known issues). Do not start M5
+expansion without the user's go-ahead.
 
 ## Task queue
 1. **M0** — context-gated selector plumbing: `src/sim/dialogue/`, side-effect-free
@@ -96,10 +98,86 @@ Known issues). Do not start M5 without the user's go-ahead.
    from the other cat, rumor re-propagation, raising campfireTalkChance.
 
 7. **Universal action animation** — spec `files/10-universal-action-anim-spec.md`
-   DRAFT (2026-07-20), awaiting approval. Wiggle (perform-phase, procedural +
-   sprite hook) + done beat (render-only, `YIELD_EVENTS`), then a small helper-
-   dedup cleanup. Sim untouched in steps 1–2. User decisions locked in spec §0;
-   real "retrieve" sim phase explicitly deferred (spec §6).
+   APPROVED + IN BUILD (2026-07-20). Wiggle (perform-phase, procedural-only —
+   §1.2 sprite hook dropped per one-image model) + done beat (render-only,
+   `YIELD_EVENTS`), then a small helper-dedup cleanup. Sim untouched in
+   steps 1–2. Real "retrieve" sim phase explicitly deferred (spec §6).
+   Build log (2026-07-20):
+   - **M1 wiggle** ← DONE. `ANIM` block in tuning.ts (5 keys); universal
+     two-frame tilt in `drawCat` for any `perform`-phase action (sleep exempt
+     via `WIGGLE_EXEMPT`; collapsed never reaches the branch), frame =
+     `floor(world.time / ANIM.wiggleFrameMs) % 2`, rotation about the foot
+     anchor for both sprite and doodle paths; walk squish suppressed while
+     wiggling. Verified: typecheck clean, 73/73 untouched; dev-server canvas
+     probe — opposite wiggle frames differ 1552 px vs 398 px same-frame noise,
+     and the tilt is feet-anchored (head band 509 changed px vs feet band 29).
+     Sim-time clock verified by driving `world.time` directly (F-scaling by
+     construction).
+   - **M2 done beat** ← DONE. `YIELD_EVENTS` map in main.ts (fished-catch→fish,
+     chopped→wood, gathered→vegetable, cooked→soup, scavenged→item; steal
+     excluded) forwarding over the bus to `renderer.noteYield`; renderer holds
+     an ephemeral `doneBeats` map (never serialized — renderer state only),
+     stamps `until` on first painted frame, expires by SIM time, suppressed on
+     grab/collapse; front-view + item icon at `doneItemLiftU`/`doneItemScale`.
+     Verified: typecheck clean, 73/73 untouched; live-page probes — doneBeats
+     after synthetic bus events = exactly the mapped items (miss/stole → empty);
+     trophy band above the head: 0 px control noise, 314 px with beat, 0 px
+     after sim-time expiry. Note: verification emitted a few synthetic events
+     into the running village (harmless cosmetic memories).
+   - **M3 sleep/collapsed poses** ← DONE. One-image model: sleep = neutral
+     front sprite rotated on its side + slow breathing squish off the SIM clock
+     (`sleepBreatheMs`/`sleepBreatheAmp`); collapsed = laid flat the OTHER way
+     + `collapsedFlatten`/`collapsedStretch`/`collapsedSplayRad`, motionless.
+     Doodle fallbacks kept for sprite-less cats. Verified: typecheck clean,
+     73/73 untouched; cloned-sim canvas probes (live village untouched) —
+     sleep breathes (1076 px per half-breath vs ~216 px scene noise), collapsed
+     still (216 px ≈ noise) and much flatter (63 px vs 103 px silhouette
+     height), sleep-vs-collapsed differ by 5055 px (hard rule: not readable as
+     sleep — holds).
+   - **M4 world-image loader** ← DONE (inert until art lands). Generic loader
+     over `assets/world/{2x,1x}` (2x preferred, keyed by basename, per-file
+     graceful fallback to the procedural drawings — same pattern as cats).
+     Registration constants live at the top of canvas-renderer.ts (§11a "code
+     absorbs the residue"). Wired per checklist rows: bonfire = layer_woodpile
+     + layer_fire squish-bounce flicker (`ANIM.fireFlicker*`, sim clock; unlit
+     = pile alone); tree/stump in-place swap (variety = flip/hue-rotate/lean,
+     growth = scale); house stages = woodpile → `HOUSE_SKETCH_ALPHA` sketch →
+     full with cached ownerTint wash; market/forage/soupstation-ready stock =
+     stacked prop draws (prop image or icon fallback); soupstation cooking =
+     fire layer in the pot gap + shipped steam; item icons via prop_* (soup →
+     prop_bowl); tile_grass = pattern ground (P4 optional). decal_path loads
+     but has no draw site — the sim has no path data (documented in-code).
+     prop_rod/ladle/book load; held-prop poses are future work. Verified:
+     typecheck, 73/73, `npm run build` green with the world dir empty;
+     temp-copied layer_fire+layer_woodpile into world/2x → pile drew from the
+     image (0 px wobble noise vs 463 px procedural), lit added 1119 px of
+     flame, flicker moved 448 px per half-cycle; files removed → fallback
+     returned (loader empty, wobble noise back). `assets/world/{2x,1x}/` dirs
+     created with .gitkeep.
+   - **Art import wave 1 (2026-07-20, after M1–M5)**: P1 layer kit + P4 ground
+     imported to `assets/world/{2x,1x}` — layer_fire, layer_woodpile,
+     env_tree (from raw env_roundtree; matches BATCH-4's single round-canopy
+     tree), env_stump, tile_grass (LIVE ground tile), decal_path (loads,
+     unwired). Raw 1024/1254 generator output was normalized on import
+     (subject re-canvased: base→90% line, flame base/pile top→shared 60%
+     line) — the raws were each framed differently, so straight copies would
+     have floated/misregistered. Raw sources moved to `assets/raw/`
+     (env_pinetree.png kept there as an unimported spare; cat wiggle frames
+     kept there too — NEVER imported per one-image model). Verified: offline
+     composed preview (flame seats on pile top, tree+stump share the ground
+     line), in-game probes (all 6 keys loaded; tree draws from image — 0 px
+     wobble; lit bonfire flickers 594 px/half-cycle), `npm run build` green.
+     Checklist rows flipped to [ADDED] with import note.
+   - **M5 helper cleanup (spec §4 items 1–2)** ← DONE. `src/sim/actions/util.ts`
+     now owns clamp/writeMemory/trait (verbatim moves; index.ts + reconcile.ts
+     import them — reconcile's deliberate M4-era local copies retired now that
+     a second consumer exists); `boost(cat, need, delta)` added to
+     `src/sim/needs.ts` replacing all 19 inline `Math.min(1, needs + d)` sites
+     across index.ts + reconcile.ts (grep-verified none remain; rescue's
+     `Math.max` floors intentionally untouched). Pure refactor: typecheck
+     clean, 73/73 green, and the 2-day 3-seed digest (1337/42/7 — event
+     tallies, final stages/condition, needs sums, final rngState) is
+     byte-identical before vs after.
    Asset pipeline (2026-07-20, v2 SIMPLIFIED): user locked a ONE-IMAGE
    model — one image per distinct thing; animation = code transforms (like
    the walk squish), quantity = stacked draws, state = composed layers
@@ -117,7 +195,9 @@ Known issues). Do not start M5 without the user's go-ahead.
    (8 prompts, registration lines for code-composed states; market/forage
    drawn EMPTY, house in tintable pale neutral). `assets/BATCH-6-PROMPTS.txt`:
    P3 items (12 prompts — completes the 26-image required set; P4 ground
-   optional). Prompt authoring method codified in
+   optional). `assets/BATCH-7-PROMPTS.txt`: P4 optional ground (2 prompts —
+   seamless grass tile + chainable path decal; import only if it beats the
+   procedural ground; LAST planned batch). Prompt authoring method codified in
    `assets/PROMPT-AUTHORING-GUIDE.txt`, referenced from CLAUDE.md — future
    asset-prompt requests follow it. Canvas follows the shipped pipeline
    (256/128), not files/01-cats.md's older 192 note.
@@ -159,7 +239,10 @@ Known issues). Do not start M5 without the user's go-ahead.
   plumbing. Reviewer PASS.
 - M4 `9084883`/`37f9a29`/`1c509c0`: reconcile action, rumors from `heard:`
   memories, campfire conversations + gathering. Each reviewer PASS.
-- Full suite **73/73** green, typecheck clean at the tip of `main`
-  (`1c509c0` + this doc). Dialogue arc M0–M4 complete; no work in progress.
+- Task 7 (universal action anim + world-image wiring, M1–M5): all five
+  milestones built and verified 2026-07-20 (73/73, typecheck, build, 3-seed
+  digest byte-identical across the M5 refactor). UNCOMMITTED alongside the
+  asset-pipeline v2 doc changes — commit when ready.
+- Full suite **73/73** green, typecheck clean. Dialogue arc M0–M4 complete.
 - Next (gated, needs go-ahead): M5 expansion. Logged cleanups below are
   optional and also want their own go-ahead.

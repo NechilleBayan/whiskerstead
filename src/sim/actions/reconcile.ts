@@ -6,24 +6,11 @@
 // still carries its history, and a deep grudge needs repeated reconciles.
 
 import { RECONCILE } from "../../config/tuning.ts";
+import { boost } from "../needs.ts";
 import { nudgeRel, relBand } from "../relationships.ts";
 import type { CatState } from "../types.ts";
 import type { ActionDef } from "./types.ts";
-
-function clamp(lo: number, hi: number, v: number): number {
-  return v < lo ? lo : v > hi ? hi : v;
-}
-
-/** Local memory writer — mirrors the private helper in actions/index.ts (kept
- *  local rather than exported, per M4 §A). Caps memory at 40 entries. */
-function writeMemory(cat: CatState, subject: string, event: string, charge: number, now: number): void {
-  cat.memory.push({ subject, event, charge, at: now });
-  if (cat.memory.length > 40) cat.memory.shift();
-}
-
-function trait(cat: CatState, t: string): boolean {
-  return cat.identity.traits.includes(t);
-}
+import { clamp, trait, writeMemory } from "./util.ts";
 
 /** A cat inclined to let things go: the generous trait or the optimist bent. */
 function forgiving(cat: CatState): boolean {
@@ -80,8 +67,8 @@ export const reconcile: ActionDef = {
       // ADDITIVE positive memories — the old argument memories stay untouched.
       writeMemory(cat, other.id, `made up with ${other.identity.name}`, RECONCILE.memoryCharge, now);
       writeMemory(other, cat.id, `${cat.identity.name} made peace`, RECONCILE.memoryChargeOther, now);
-      cat.needs.social = Math.min(1, cat.needs.social + 0.3);
-      other.needs.social = Math.min(1, other.needs.social + 0.2);
+      boost(cat, "social", 0.3);
+      boost(other, "social", 0.2);
       cat.emotion = "happy";
       other.emotion = "happy";
       emit({ type: "reconciled", a: cat.id, b: other.id, outcome: "accepted" });
@@ -89,7 +76,7 @@ export const reconcile: ActionDef = {
       // Rebuffed: a tiny drift down (still rival), a sour memory — no erasure.
       nudgeRel(cat, other.id, -RECONCILE.rebuffDown, emit);
       writeMemory(cat, other.id, `${other.identity.name} wasn't ready`, RECONCILE.rebuffMemoryCharge, now);
-      cat.needs.social = Math.min(1, cat.needs.social + 0.1);
+      boost(cat, "social", 0.1);
       cat.emotion = "sad";
       emit({ type: "reconciled", a: cat.id, b: other.id, outcome: "rebuffed" });
     }
