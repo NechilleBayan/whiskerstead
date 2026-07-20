@@ -286,6 +286,12 @@ export const ANIM = {
    *  on the SIM clock, vertical stretch with matching horizontal narrow. */
   fireFlickerMs: 240,
   fireFlickerAmp: 0.12,
+  /** One-image worship pose (Addendum B): a hand-drawn arms-raised sprite with a
+   *  feet-anchored idle bob on the SIM clock (pause freezes it, fast-forward
+   *  quickens it). Render-only, no serialized state. */
+  worshipBobMs: 1000, // full bob period (2pi); brisker than the 1600 sleep breath
+  worshipBobAmp: 0.09, // ~2.25x sleep-breathe amp, under the 0.12 fire ceiling
+  worshipBeatMs: 1200, // convert-beat hold; > 900 done beat so >=1 full bob cycle shows
 } as const;
 
 /** Near-death floors — spec §9. Condition never falls below this. */

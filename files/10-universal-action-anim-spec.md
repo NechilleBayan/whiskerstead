@@ -348,3 +348,85 @@ copied):
   BATCH-1 prompts — drop files in, zero code).
 - Sleep/collapsed frame pairs (still procedural, §7 P2 reserved names only).
 - Any new cat art proposals; any `src/sim/` change; real "retrieve" phase.
+
+## 8. Addendum B — Worship pose (2026-07-20c)
+
+User decision: a SECOND sanctioned hand-drawn pose joins the wiggle a/b pair — a
+`cat_<name>_worship.png` reverence sprite (arms raised) for the cult beats. Same
+plug-and-play discipline as Addendum A: the loader hook is inert until a file
+exists, and a cat with no worship sprite of its own falls back to ink's body
+until its own ships (auto-upgrades, zero code). Render-only; `src/sim/`
+untouched; no new serialized state (the convert-beat map is ephemeral, exactly
+like `doneBeats`).
+
+### Approach — one code pass + one asset normalization
+
+- **Loader (`canvas-renderer.ts`):** a third `import.meta.glob` beside
+  `CAT_WIGGLE_URLS` — `"../../assets/cats/2x/cat_*_worship.png"`, same options.
+  Match `/cat_([a-z]+)_worship\.png$/` and store into the existing `catSprites`
+  map under `${name}_worship` (e.g. `ink_worship`). No key collision.
+- **Generic lookup with ink default:** `worshipSprite(catId)` returns the cat's
+  own `${catId}_worship` if decoded (`complete && naturalWidth > 0`), else the
+  ink default (`WORSHIP_DEFAULT_CAT = "ink"`), else `undefined` (missing/decoding
+  → falls through to the procedural wiggle). This is the entire per-cat fallback
+  rule; no config, no lists.
+
+### Triggers (three)
+
+1. **`artifact_visit` perform** — a cat at the shrine reads as reverent.
+2. **`recruit` perform** — the founder's pitch reads the same.
+3. **Convert beat** — a successful recruit holds the pose briefly after the
+   perform ends. `main.ts` (which owns the bus wiring; the renderer stays a pure
+   snapshot-reader) subscribes to the `recruited` event and calls
+   `renderer.noteConvert(target)` **only when `outcome === "join"`** — refusals
+   never worship. The renderer stamps `worshipBeats: Map<catId, { until }>`,
+   `until < 0` = stamp on the next painted frame (mirrors `doneBeats`), held
+   `ANIM.worshipBeatMs`, cleared under grab / collapse / sleep.
+
+### Rendering
+
+- **Pose ladder:** `collapsed > sleep > WORSHIP > done beat > wiggle > walk/idle`.
+  The worship branch sits between the sleep block and the awake `else`, gated on
+  a decoded `worshipImg`.
+- **Feet-anchored idle bob on the SIM clock** (pause freezes it, fast-forward
+  quickens it — no `Math.random`/`Date.now`): `bob = worshipBobAmp *
+  sin(world.time / worshipBobMs * 2π)`, `h = SPRITE_H*(1+bob)`,
+  `w = SPRITE_H*(1−bob)`, drawn `SPRITE_BASELINE − h` so the feet stay pinned at
+  the baseline exactly like the neutral (no jump on swap-in). Symmetric pose —
+  **no facing mirror**, no carried-item icon, no strained modifier.
+- **Wiggle suppression is by branch precedence only** — the worship branch sits
+  above the wiggle-bearing `else`, so nothing is added to `WIGGLE_EXEMPT`. The
+  deliberate consequence: when no worship sprite is decoded, `artifact_visit` /
+  `recruit` still fall through to the normal procedural wiggle.
+
+### Tuning (three keys appended to `ANIM`)
+
+```ts
+worshipBobMs: 1000,   // full bob period (2π); brisker than the 1600 sleep breath
+worshipBobAmp: 0.09,  // ~2.25x sleep-breathe amp, under the 0.12 fire ceiling
+worshipBeatMs: 1200,  // convert-beat hold; > 900 done beat so >=1 full bob cycle shows
+```
+
+### Intentional caveat
+
+Only `cat_ink_worship.png` ships today. A **non-ink** cat worshipping shows
+**ink's body** (the `WORSHIP_DEFAULT_CAT` fallback) until it ships its own
+`cat_<name>_worship.png` — at which point it auto-upgrades with zero code. This
+is accepted on purpose: the cult founder/converts are usually few, and a shared
+reverence silhouette reads fine as a placeholder.
+
+### Files touched
+
+| File | Change |
+|---|---|
+| `src/render/canvas-renderer.ts` | worship glob + loader loop, `worshipSprite()` helper, `worshipBeats` map + `noteConvert()`, worship branch in `drawCat` |
+| `src/config/tuning.ts` | `ANIM` += `worshipBobMs / worshipBobAmp / worshipBeatMs` |
+| `src/main.ts` | one `recruited`/`join` bus subscription forwarding to `noteConvert` |
+| `assets/cats/{2x,1x}/cat_ink_worship.png` | raw re-canvased to 256/128, feet baseline matched to the ink neutral |
+| `src/sim/**` | **no changes** (render-only) |
+
+### Out of scope
+
+- Worship sprites for biscuit/moss/pepper/bramble (plug-and-play — drop a
+  `cat_<name>_worship.png` in, zero code; ink's body stands in until then).
+- Any `src/sim/` change; any real "retrieve"/reverence sim phase.

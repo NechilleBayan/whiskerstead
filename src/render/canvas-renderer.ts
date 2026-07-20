@@ -27,6 +27,16 @@ const CAT_WIGGLE_URLS = import.meta.glob("../../assets/cats/2x/cat_*_wiggle_*.pn
   import: "default",
 }) as Record<string, string>;
 
+// Hand-drawn worship pose (Addendum B). Keyed by `<name>_worship`. Inert until a
+// cat ships its worship sprite; a cat with no sprite of its own falls back to
+// ink's body (worshipSprite) until its own cat_<name>_worship.png lands — a
+// render-only, plug-and-play auto-upgrade with zero code.
+const CAT_WORSHIP_URLS = import.meta.glob("../../assets/cats/2x/cat_*_worship.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
 // Generic world-image loader (one-image model, ASSET-CHECKLIST v2). Covers the
 // whole checklist set — layers (layer_*), buildings (bldg_*), site_*, props
 // (prop_*), and optional ground (tile_grass, decal_path) — keyed by basename.
@@ -49,6 +59,9 @@ const WORLD_SPRITE_URLS_2X = import.meta.glob("../../assets/world/2x/*.png", {
 // grounds where the old doodle's legs did; height/width are squished per-frame.
 const SPRITE_H = 56;
 const SPRITE_BASELINE = 18;
+// Worship-pose fallback body: a cat with no cat_<name>_worship.png of its own
+// shows ink's worship body until its own ships (auto-upgrades, zero code).
+const WORSHIP_DEFAULT_CAT = "ink";
 // Universal wiggle (anim spec §1.2): every perform-phase action rocks the
 // neutral sprite; sleep keeps its spec-mandated distinct silhouette (collapsed
 // never reaches the wiggle branch). Add ids here if a sit reads wrong.
@@ -111,11 +124,21 @@ export class CanvasRenderer {
    *  state — NEVER serialized. until < 0 means "stamp on next painted frame"
    *  so a beat always shows a full ANIM.doneMs of sim time. */
   private doneBeats = new Map<string, { item: string; until: number }>();
+  /** Convert beats (Addendum B), keyed by cat id. Same ephemeral render state
+   *  as doneBeats — NEVER serialized. until < 0 means "stamp on next painted
+   *  frame" so a beat always holds a full ANIM.worshipBeatMs of sim time. */
+  private worshipBeats = new Map<string, { until: number }>();
 
   /** Called from main.ts bus wiring when a yield event lands (YIELD_EVENTS).
    *  The renderer stays a pure snapshot-reader — it never subscribes itself. */
   noteYield(catId: string, itemType: string): void {
     this.doneBeats.set(catId, { item: itemType, until: -1 });
+  }
+
+  /** Called from main.ts on a successful "recruited"/join — holds the worship
+   *  pose briefly after a convert so the beat reads even outside a perform. */
+  noteConvert(catId: string): void {
+    this.worshipBeats.set(catId, { until: -1 });
   }
 
   private worldSprites = new Map<string, HTMLImageElement>();
@@ -147,6 +170,13 @@ export class CanvasRenderer {
       img.src = url;
       this.catSprites.set(`${m[1]}_wiggle_${m[2]}`, img); // e.g. "biscuit_wiggle_a"
     }
+    for (const [path, url] of Object.entries(CAT_WORSHIP_URLS)) {
+      const m = path.match(/cat_([a-z]+)_worship\.png$/);
+      if (!m) continue;
+      const img = new Image();
+      img.src = url;
+      this.catSprites.set(`${m[1]}_worship`, img); // e.g. "ink_worship"
+    }
   }
 
   /** The hand-drawn wiggle frame pair for a cat, ready to draw — undefined
@@ -158,6 +188,18 @@ export class CanvasRenderer {
     if (a && a.complete && a.naturalWidth > 0 && b && b.complete && b.naturalWidth > 0) {
       return { a, b };
     }
+    return undefined;
+  }
+
+  /** The worship sprite for a cat, ready to draw — the cat's own `<id>_worship`
+   *  if decoded, else the ink default (WORSHIP_DEFAULT_CAT). Undefined only when
+   *  neither is decoded (missing file or still decoding), which drops the cat
+   *  back to the procedural perform-phase wiggle. */
+  private worshipSprite(catId: string): HTMLImageElement | undefined {
+    const own = this.catSprites.get(`${catId}_worship`);
+    if (own && own.complete && own.naturalWidth > 0) return own;
+    const def = this.catSprites.get(`${WORSHIP_DEFAULT_CAT}_worship`);
+    if (def && def.complete && def.naturalWidth > 0) return def;
     return undefined;
   }
 
@@ -642,6 +684,13 @@ export class CanvasRenderer {
 
     const collapsed = cat.stage === "collapsed";
     const sleeping = cat.action?.id === "sleep" && cat.action.phase === "perform";
+    // Worship pose (Addendum B): the perform phase of an artifact visit or a
+    // recruit pitch reads as reverence. Symmetric, feet-anchored, no facing.
+    const worshipAct =
+      !collapsed &&
+      !cat.grabbed &&
+      cat.action?.phase === "perform" &&
+      (cat.action.id === "artifact_visit" || cat.action.id === "recruit");
 
     // Done-beat lifecycle (anim spec §1.3): stamp the expiry on the first
     // painted frame, expire by SIM time (fast-forward shortens beats — correct),
@@ -654,6 +703,19 @@ export class CanvasRenderer {
         beat = undefined;
       }
     }
+
+    // Convert-beat lifecycle (Addendum B): mirrors the done-beat — stamp the
+    // expiry on the first painted frame, expire by SIM time, and clear under
+    // grab / collapse / sleep. Ephemeral; entries just drop out of the map.
+    let wBeat = this.worshipBeats.get(cat.id);
+    if (wBeat) {
+      if (wBeat.until < 0) wBeat.until = world.time + ANIM.worshipBeatMs;
+      if (world.time >= wBeat.until || cat.grabbed || collapsed || sleeping) {
+        this.worshipBeats.delete(cat.id);
+        wBeat = undefined;
+      }
+    }
+    const worshipImg = worshipAct || !!wBeat ? this.worshipSprite(cat.id) : undefined;
 
     ctx.lineWidth = 2.5;
     ctx.strokeStyle = PALETTE.ink;
@@ -698,6 +760,15 @@ export class CanvasRenderer {
       ctx.fillStyle = PALETTE.ink;
       ctx.font = "9px sans-serif";
       ctx.fillText("z", 12, -14);
+    } else if (worshipImg) {
+      // Worship pose (Addendum B): the arms-raised sprite with a feet-anchored
+      // idle bob off the SIM clock (pause freezes it, fast-forward quickens it).
+      // Symmetric pose — no facing mirror, no carried-item icon, no strained
+      // modifier. Feet pinned at SPRITE_BASELINE, exactly like the neutral.
+      const bob = ANIM.worshipBobAmp * Math.sin((world.time / ANIM.worshipBobMs) * Math.PI * 2);
+      const h = SPRITE_H * (1 + bob);
+      const w = SPRITE_H * (1 - bob);
+      ctx.drawImage(worshipImg, -w / 2, SPRITE_BASELINE - h, w, h); // bottom at baseline = feet-anchored
     } else {
       const strained = cat.stage === "strained" || cat.stage === "critical";
       // Universal wiggle (anim spec §1.2): any perform-phase action (sleep

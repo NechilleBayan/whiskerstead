@@ -30,17 +30,21 @@ SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
           Export 2x + 1x, same filename, per SPRITE-SPEC-REFERENCE.txt.
 
 -----------------------------------------------------------------------------
- P0 — CATS: COMPLETE. NO NEW ART except the ONE wiggle a/b pair.  a/b per cat
+ P0 — CATS: COMPLETE. NO NEW ART except the sanctioned wiggle a/b + worship poses
 -----------------------------------------------------------------------------
  [ADDED] cat_<name>_front_neutral.png / cat_<name>_tqfront_neutral.png ×5
- All states are code transforms of these 10 sprites, with ONE sanctioned
- hand-drawn frame pair (wiggle_a/b) that auto-upgrades per cat — see
- files/10-universal-action-anim-spec.md Addendum A:
+ All states are code transforms of these 10 sprites, with TWO sanctioned
+ hand-drawn pose exceptions (wiggle_a/b + worship) that auto-upgrade per cat —
+ see files/10-universal-action-anim-spec.md Addenda A + B:
    walk        squash-stretch bounce                    (shipped)
    wiggle      procedural 2-phase tilt fallback; hand-drawn cat_<name>_wiggle_
                a/b.png pair auto-upgrades that cat (biscuit ADDED 2026-07-20;
                moss/pepper/ink/bramble still procedural — drop files in to
                upgrade, zero code)
+   worship     hand-drawn cat_<name>_worship.png (arms-raised reverence) for the
+               artifact_visit/recruit performs + the convert beat, feet-anchored
+               idle bob; ink ADDED 2026-07-20c; a cat with no sprite of its own
+               shows ink's body until it ships one — drop files in, zero code
    done beat   sprite + item icon lifted overhead       (shipped 2026-07-20)
    sleep       sprite laid on its side + slow breathing squish (shipped 2026-07-20)
    collapsed   laid flat + extra flatten/splay ≠ sleep  (shipped 2026-07-20)
@@ -71,6 +75,12 @@ SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
  biscuit neutral) and IMPORTED to assets/cats/{2x,1x}/ 2026-07-20b — the
  one-image "never-import wiggle" rule was reversed for wiggle a/b pairs
  (see P0 above + anim spec Addendum A). Raws stay archived in assets/raw/.
+ cat_ink_worship.png (arms-raised reverence pose) was likewise re-canvased
+ from raw (1254 px → 256/128; scaled by BODY, ears-to-feet, so the head reads
+ neutral-sized; feet baseline matched to the ink neutral, yRef 231, feet
+ x-centroid 137.6 vs neutral 138.2) and IMPORTED to assets/cats/{2x,1x}/
+ 2026-07-20c — the SECOND sanctioned hand-drawn pose (see P0 + anim spec
+ Addendum B). Raw archived in assets/raw/cat_ink_worship.png.
 
 -----------------------------------------------------------------------------
  P2 — BUILDINGS (one image each; states composed in code)           8 files
@@ -130,8 +140,9 @@ SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
  speech/thought/gossip bubbles + intent icons (drawn text/shapes) · steam ·
  rain/storm · window glow · day/night tint · sparkle · splash · ripples ·
  sleep/collapsed poses · emotion faces · seasonal recolors (code tint when
- M5 comes). [wiggle a/b pairs moved OUT of never-assets 2026-07-20b — they
- are the one sanctioned hand-drawn frame pair.]
+ M5 comes). [wiggle a/b pairs moved OUT of never-assets 2026-07-20b, and the
+ worship pose 2026-07-20c — these are the two sanctioned hand-drawn pose
+ exceptions; everything else stays one-image code transforms.]
 
 -----------------------------------------------------------------------------
  TOTALS   26 required images (+2 optional) — down from 146 names (~292

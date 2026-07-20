@@ -2,7 +2,9 @@
 
 ## Current milestone
 **Universal action animation + one-image asset wiring COMPLETE (task 7,
-M1–M5)** as of 2026-07-20, uncommitted — see task 7 build log. Before that:
+M1–M6)** — committed 2026-07-20 (`73afecc`, `aca0aab`). Plus **M7 worship
+pose** (render-only, reviewed PASS 2026-07-21, UNCOMMITTED) — see task 7
+build log. Before that:
 dialogue arc complete (M0–M4, 2026-07-18; commits M0 `3e70a4b`, M1 `ddacb2c`,
 M2w1 `7845ff7`, M2w2 `a7a720a`, M3 `1aaacb6`, M4 `9084883`/`37f9a29`/
 `1c509c0`). Full suite 73/73 green, typecheck clean, build green. The only
@@ -199,6 +201,40 @@ expansion without the user's go-ahead.
      four cats still procedural (plug-and-play once their pairs are generated
      from BATCH-1). Docs synced: anim spec Addendum A, SPRITE-SPEC §5
      exception, both ASSET-CHECKLISTs, BATCH-1 banner, project CLAUDE.md.
+   - **M7 worship pose (built 2026-07-20, reviewed/verified 2026-07-21)** ←
+     DONE, UNCOMMITTED. User-supplied `cat_ink_worship.png` (Ink, arms-raised
+     "praise" pose) wired as a GENERIC worship pose. Render-only; sim untouched;
+     no new serialized state. Spec: anim spec Addendum B. Triggers: `drawCat`
+     shows the pose during the `perform` phase of `artifact_visit` or `recruit`
+     (any cat in the role — user chose "whoever is in the role", not Ink-only),
+     PLUS a transient convert-beat on a freshly-recruited cat — `main.ts`
+     subscribes to `recruited` and calls `renderer.noteConvert(e.target)` only
+     when `outcome === "join"` (refusals show nothing; verified `"join"` is the
+     success literal at actions/index.ts:591). Render (`canvas-renderer.ts`
+     only): third `import.meta.glob` for `cat_*_worship.png` → keyed
+     `${name}_worship`; `worshipSprite()` returns the cat's own sprite if
+     decoded, else the `WORSHIP_DEFAULT_CAT="ink"` default, else undefined
+     (→ falls through to the procedural wiggle). New pose branch sits
+     collapsed > sleep > **worship** > awake(done-beat/wiggle/walk); wiggle
+     suppressed by BRANCH PRECEDENCE, not `WIGGLE_EXEMPT`, so a missing worship
+     sprite still wiggles. Feet-anchored idle bob off the SIM clock —
+     `h=SPRITE_H*(1+bob)`, `w=SPRITE_H*(1-bob)`, bob = `worshipBobAmp *
+     sin(world.time/worshipBobMs*2π)` — pause freezes it, F quickens it. Three
+     new `ANIM` keys: `worshipBobMs` 1000, `worshipBobAmp` 0.09,
+     `worshipBeatMs` 1200. `worshipBeats` map is ephemeral (never serialized,
+     like `doneBeats`). Asset: 760 KB raw re-canvased to 256/128 with feet
+     baseline + centroid matched to the Ink neutral (baseline 231/231, centroid
+     137.6/138.2 → no jump on swap), all corners α=0, nothing clipped; raw
+     archived to `assets/raw/`; `pngjs` added as a devDependency for OFFLINE
+     normalization only (grep-confirmed not imported by `src/`). INTENTIONAL
+     caveat (documented in Addendum B): a non-Ink convert renders Ink's white
+     body until it ships its own `cat_<name>_worship.png` (plug-and-play, zero
+     code). Verified: reviewer PASS (13/13 checkpoints), 73/73 tests unchanged,
+     typecheck clean, `npm run build` green (`cat_ink_worship` bundled). Docs
+     synced: anim spec Addendum B, ASSET-CHECKLIST worship row + never-assets
+     note, SPRITE-SPEC §7 naming, project CLAUDE.md pose exception. Deferred
+     (each own go-ahead): per-cat worship art for moss/pepper/bramble/biscuit,
+     desynced per-cat bob phase, a worship bubble/SFX, any sim-side ritual.
    Asset pipeline (2026-07-20, v2 SIMPLIFIED): user locked a ONE-IMAGE
    model — one image per distinct thing; animation = code transforms (like
    the walk squish), quantity = stacked draws, state = composed layers
@@ -261,10 +297,14 @@ expansion without the user's go-ahead.
   plumbing. Reviewer PASS.
 - M4 `9084883`/`37f9a29`/`1c509c0`: reconcile action, rumors from `heard:`
   memories, campfire conversations + gathering. Each reviewer PASS.
-- Task 7 (universal action anim + world-image wiring, M1–M5): all five
-  milestones built and verified 2026-07-20 (73/73, typecheck, build, 3-seed
-  digest byte-identical across the M5 refactor). UNCOMMITTED alongside the
-  asset-pipeline v2 doc changes — commit when ready.
+- Task 7 (universal action anim + world-image wiring, M1–M6): built and
+  verified 2026-07-20 (73/73, typecheck, build, 3-seed digest byte-identical
+  across the M5 refactor). COMMITTED 2026-07-20 (`73afecc` checkpoint asset
+  imports, `aca0aab` wiggle sprite-hook).
+- Task 7 / **M7 worship pose**: built 2026-07-20, reviewed/verified 2026-07-21
+  (reviewer PASS 13/13, 73/73 unchanged, typecheck, build green; asset baseline
+  matched to Ink neutral — no jump). Render-only, no serialized state.
+  UNCOMMITTED — commit when ready.
 - Full suite **73/73** green, typecheck clean. Dialogue arc M0–M4 complete.
 - Next (gated, needs go-ahead): M5 expansion. Logged cleanups below are
   optional and also want their own go-ahead.

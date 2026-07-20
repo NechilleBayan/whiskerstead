@@ -83,6 +83,7 @@
 7. NAMING (lowercase, underscores)
    - cats:      cat_<name>_<view>_<emotion>.png      (existing loader)
                 cat_<name>_wiggle_<a|b>.png          (wiggle hook, step 1)
+                cat_<name>_worship.png               (worship pose, Addendum B)
                 cat_<name>_sleep_<a|b>.png / cat_<name>_collapsed.png (P2)
    - buildings: bldg_<subject>_<state>.png     sites: site_<subject>_<state>.png
    - props:     prop_<subject>_<variant>.png   env/fx/ui/tile/decal_ prefixes

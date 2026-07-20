@@ -50,6 +50,13 @@ for (const [type, pick] of Object.entries(YIELD_EVENTS)) {
   });
 }
 
+// ---- convert beat (anim spec Addendum B): a successful recruit holds the
+// convert's worship pose briefly. Only "join" outcomes count — refusals don't
+// worship. Same snapshot-reader discipline as the yield beats above.
+sim.bus.on("recruited", (e) => {
+  if (e.type === "recruited" && e.outcome === "join") renderer.noteConvert(e.target);
+});
+
 let fast = false;
 let showDebug = false;
 let held: string | null = null;
