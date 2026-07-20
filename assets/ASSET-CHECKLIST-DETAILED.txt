@@ -29,8 +29,10 @@ and /1x/ under the same filename. One row = one filename = two exported files.
  animates all 23 actions for every cat.                            ENGINE: READY
 -----------------------------------------------------------------------------
  biscuit
-   [ ] cat_biscuit_wiggle_a.png     frame A — lean/arm-swing left
-   [ ] cat_biscuit_wiggle_b.png     frame B — lean/arm-swing right
+   [ADDED] cat_biscuit_wiggle_a.png  frame A — lean/arm-swing left  (imported
+                                     2026-07-20b, re-canvased from assets/raw/)
+   [ADDED] cat_biscuit_wiggle_b.png  frame B — lean/arm-swing right (imported
+                                     2026-07-20b, re-canvased from assets/raw/)
  moss
    [ ] cat_moss_wiggle_a.png
    [ ] cat_moss_wiggle_b.png

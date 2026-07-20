@@ -30,12 +30,17 @@ SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
           Export 2x + 1x, same filename, per SPRITE-SPEC-REFERENCE.txt.
 
 -----------------------------------------------------------------------------
- P0 — CATS: COMPLETE. NO NEW ART, EVER.                          0 new files
+ P0 — CATS: COMPLETE. NO NEW ART except the ONE wiggle a/b pair.  a/b per cat
 -----------------------------------------------------------------------------
  [ADDED] cat_<name>_front_neutral.png / cat_<name>_tqfront_neutral.png ×5
- All states are code transforms of these 10 sprites:
+ All states are code transforms of these 10 sprites, with ONE sanctioned
+ hand-drawn frame pair (wiggle_a/b) that auto-upgrades per cat — see
+ files/10-universal-action-anim-spec.md Addendum A:
    walk        squash-stretch bounce                    (shipped)
-   wiggle      2-phase tilt at the feet                 (shipped 2026-07-20)
+   wiggle      procedural 2-phase tilt fallback; hand-drawn cat_<name>_wiggle_
+               a/b.png pair auto-upgrades that cat (biscuit ADDED 2026-07-20;
+               moss/pepper/ink/bramble still procedural — drop files in to
+               upgrade, zero code)
    done beat   sprite + item icon lifted overhead       (shipped 2026-07-20)
    sleep       sprite laid on its side + slow breathing squish (shipped 2026-07-20)
    collapsed   laid flat + extra flatten/splay ≠ sleep  (shipped 2026-07-20)
@@ -61,8 +66,11 @@ SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
  spec (base on the 90% line, flame base / pile top on the shared 60% line,
  tree ~78% of canvas, stump ~30px-equivalent) and exported 256/128. Raw
  sources archived in assets/raw/ (incl. env_pinetree.png, an unimported
- spare second tree — canon is ONE tree — and the two cat wiggle frames,
- which stay NEVER-import per the one-image model).
+ spare second tree — canon is ONE tree). The two biscuit wiggle frames were
+ re-canvased from raw (1254 px → 256/128, feet baseline matched to the
+ biscuit neutral) and IMPORTED to assets/cats/{2x,1x}/ 2026-07-20b — the
+ one-image "never-import wiggle" rule was reversed for wiggle a/b pairs
+ (see P0 above + anim spec Addendum A). Raws stay archived in assets/raw/.
 
 -----------------------------------------------------------------------------
  P2 — BUILDINGS (one image each; states composed in code)           8 files
@@ -121,8 +129,9 @@ SIZES     buildings author 512 (pond 768) · layers 256 · items 128.
 -----------------------------------------------------------------------------
  speech/thought/gossip bubbles + intent icons (drawn text/shapes) · steam ·
  rain/storm · window glow · day/night tint · sparkle · splash · ripples ·
- wiggle frames · sleep/collapsed poses · emotion faces · seasonal recolors
- (code tint when M5 comes).
+ sleep/collapsed poses · emotion faces · seasonal recolors (code tint when
+ M5 comes). [wiggle a/b pairs moved OUT of never-assets 2026-07-20b — they
+ are the one sanctioned hand-drawn frame pair.]
 
 -----------------------------------------------------------------------------
  TOTALS   26 required images (+2 optional) — down from 146 names (~292

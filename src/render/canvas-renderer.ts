@@ -18,6 +18,15 @@ const CAT_SPRITE_URLS = import.meta.glob("../../assets/cats/2x/cat_*_neutral.png
   import: "default",
 }) as Record<string, string>;
 
+// Hand-drawn wiggle frames (Addendum A). Keyed by `<name>_wiggle_<a|b>`. Inert
+// until a complete a/b pair ships for a cat; a complete pair auto-upgrades that
+// cat's perform-phase wiggle from procedural tilt to swapped frames.
+const CAT_WIGGLE_URLS = import.meta.glob("../../assets/cats/2x/cat_*_wiggle_*.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
 // Generic world-image loader (one-image model, ASSET-CHECKLIST v2). Covers the
 // whole checklist set — layers (layer_*), buildings (bldg_*), site_*, props
 // (prop_*), and optional ground (tile_grass, decal_path) — keyed by basename.
@@ -131,6 +140,25 @@ export class CanvasRenderer {
       img.src = url;
       this.catSprites.set(`${m[1]}_${m[2]}`, img); // e.g. "biscuit_front"
     }
+    for (const [path, url] of Object.entries(CAT_WIGGLE_URLS)) {
+      const m = path.match(/cat_([a-z]+)_wiggle_([ab])\.png$/);
+      if (!m) continue;
+      const img = new Image();
+      img.src = url;
+      this.catSprites.set(`${m[1]}_wiggle_${m[2]}`, img); // e.g. "biscuit_wiggle_a"
+    }
+  }
+
+  /** The hand-drawn wiggle frame pair for a cat, ready to draw — undefined
+   *  unless BOTH a/b exist, are `complete`, and have `naturalWidth > 0`
+   *  (one file, still decoding, or broken → procedural tilt fallback). */
+  private wigglePair(catId: string): { a: HTMLImageElement; b: HTMLImageElement } | undefined {
+    const a = this.catSprites.get(`${catId}_wiggle_a`);
+    const b = this.catSprites.get(`${catId}_wiggle_b`);
+    if (a && a.complete && a.naturalWidth > 0 && b && b.complete && b.naturalWidth > 0) {
+      return { a, b };
+    }
+    return undefined;
   }
 
   private loadWorldSprites(): void {
@@ -677,14 +705,22 @@ export class CanvasRenderer {
       // clock — fast-forward speeds it, pause freezes it — and the walk squish
       // is suppressed while it runs (amp is ~0 at a standstill anyway).
       // State priority (anim spec §1.2): done beat > wiggle > walk/idle.
+      // Addendum A: a complete hand-drawn a/b pair swaps those two front-view
+      // frames on the same clock (parity-0 = frame a = left lean) and drops the
+      // procedural tilt; cats without a pair keep the tilt below unchanged.
       const wiggling = !beat && !cat.grabbed && cat.action?.phase === "perform" && !WIGGLE_EXEMPT.has(cat.action.id);
-      const tilt = wiggling
-        ? (Math.floor(world.time / ANIM.wiggleFrameMs) % 2 === 0 ? -1 : 1) * ANIM.wiggleTiltRad
-        : 0;
+      const pair = wiggling ? this.wigglePair(cat.id) : undefined;
+      const parityA = Math.floor(world.time / ANIM.wiggleFrameMs) % 2 === 0;
+      const tilt = pair ? 0 : wiggling ? (parityA ? -1 : 1) * ANIM.wiggleTiltRad : 0;
       // 3/4-front while travelling, front only after a full stop (see
-      // updateCatAnim); the done beat always faces the camera to show off.
-      const view = beat ? "front" : anim.view;
-      const img = this.catSprites.get(`${cat.id}_${view}`) ?? this.catSprites.get(`${cat.id}_front`);
+      // updateCatAnim); the done beat and hand-drawn wiggle frames always face
+      // the camera (front-view art).
+      const view = beat || pair ? "front" : anim.view;
+      const img = pair
+        ? parityA
+          ? pair.a
+          : pair.b
+        : (this.catSprites.get(`${cat.id}_${view}`) ?? this.catSprites.get(`${cat.id}_front`));
       if (img && img.complete && img.naturalWidth > 0) {
         // Squash-and-stretch: widen as it flattens, anchored at the feet so it
         // reads as a grounded bounce. Amplitude is only nonzero while walking.

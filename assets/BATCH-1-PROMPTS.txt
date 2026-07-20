@@ -1,4 +1,4 @@
->>> CANCELLED 2026-07-20 — cat art beyond the shipped neutrals was dropped (one-image model: all cat states are now code transforms). Do not generate. See ASSET-CHECKLIST.txt. <<<
+>>> PARTIALLY REINSTATED 2026-07-20b — the wiggle a/b frame pairs (this whole batch) are BACK IN SCOPE: the renderer now auto-upgrades any cat that has a complete cat_<name>_wiggle_a/b.png pair, falling back to the procedural tilt otherwise (files/10-universal-action-anim-spec.md Addendum A). Biscuit is done (imported 2026-07-20b). Generate moss/pepper/ink/bramble from the prompts below to upgrade them — drop the files in assets/cats/{2x,1x}/, zero code. All OTHER cat-art batches (sleep/collapsed/emotions) remain cancelled per the one-image model. <<<
 =============================================================================
  WHISKERSTEAD — BATCH 1 IMAGE-GENERATION PROMPTS           [PROJECT-TRACKED]
  Added to project: 2026-07-20 · lives in assets/

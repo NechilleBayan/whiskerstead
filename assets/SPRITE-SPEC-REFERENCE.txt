@@ -57,8 +57,15 @@
      stretch is applied in-engine — author frames unsquashed.
 
 5. ANIMATION CONVENTION (v2, one-image model — locked 2026-07-20)
-   - NO frame pairs. Every asset is ONE still image; all motion is a code
-     transform of it (squish, bounce, tilt, wobble — like the walk squish).
+   - Exception (locked 2026-07-20b): cat_<name>_wiggle_<a|b>.png is the ONE
+     sanctioned frame pair. A complete pair auto-upgrades that cat's
+     perform-phase wiggle (frames swap on the sim-time clock, procedural tilt
+     dropped); a missing/partial pair falls back to the procedural tilt.
+     Everything else remains one-image. See files/10-universal-action-anim-
+     spec.md Addendum A.
+   - NO frame pairs (other than wiggle a/b above). Every asset is ONE still
+     image; all motion is a code transform of it (squish, bounce, tilt,
+     wobble — like the walk squish).
    - Author consequences: draw the neutral/base state only, centered and
      unsquished, with clean silhouette in every direction the code may
      tilt it (~±10°). Layered states (fire on woodpile) are separate

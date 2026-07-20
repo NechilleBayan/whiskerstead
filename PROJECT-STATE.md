@@ -98,8 +98,8 @@ expansion without the user's go-ahead.
    from the other cat, rumor re-propagation, raising campfireTalkChance.
 
 7. **Universal action animation** — spec `files/10-universal-action-anim-spec.md`
-   APPROVED + IN BUILD (2026-07-20). Wiggle (perform-phase, procedural-only —
-   §1.2 sprite hook dropped per one-image model) + done beat (render-only,
+   APPROVED + IN BUILD (2026-07-20). Wiggle (perform-phase; §1.2 sprite hook
+   reinstated 2026-07-20b — see M6/Addendum A) + done beat (render-only,
    `YIELD_EVENTS`), then a small helper-dedup cleanup. Sim untouched in
    steps 1–2. Real "retrieve" sim phase explicitly deferred (spec §6).
    Build log (2026-07-20):
@@ -178,16 +178,38 @@ expansion without the user's go-ahead.
      clean, 73/73 green, and the 2-day 3-seed digest (1337/42/7 — event
      tallies, final stages/condition, needs sums, final rngState) is
      byte-identical before vs after.
+   - **M6 wiggle sprite-hook reinstated (2026-07-20b)** ← DONE. User reversed
+     the "procedural-only, no wiggle_[ab] loader widening" call. Spec: anim
+     spec Addendum A (§7). Render-only, `src/render/canvas-renderer.ts` only:
+     second `import.meta.glob` for `assets/cats/2x/cat_*_wiggle_*.png` → keyed
+     `${name}_wiggle_a/b` in the same `catSprites` map; `wigglePair()` returns
+     a pair only when both frames are `.complete` && `naturalWidth>0`. In the
+     `drawCat` wiggle branch, a resolved pair swaps frames on the SAME
+     `floor(world.time/wiggleFrameMs)%2` clock (parity 0=a, 1=b) with `tilt=0`
+     and view forced front; no pair → the procedural tilt path runs
+     byte-for-byte unchanged (reviewer confirmed by trace). No tuning keys,
+     no sim touch. Biscuit's two raw frames (assets/raw/, 1254 px) re-canvased
+     to 256/128 with feet baseline + centroid matched to the biscuit neutral
+     (baseline 231/231, centroid 137.7/138.1 vs 138.3, subjH 193/193 — no size
+     breathing) and imported to `assets/cats/{2x,1x}/`. Verified: typecheck,
+     73/73, `npm run build` green with frames present; live-renderer probe
+     (drove `world.time` + captured `drawImage`) — biscuit draws wiggle_a at
+     parity 0 / wiggle_b at parity 1 with rotation 0; frames hidden → biscuit
+     falls back to the neutral at rot ∓0.10 (procedural tilt intact); other
+     four cats still procedural (plug-and-play once their pairs are generated
+     from BATCH-1). Docs synced: anim spec Addendum A, SPRITE-SPEC §5
+     exception, both ASSET-CHECKLISTs, BATCH-1 banner, project CLAUDE.md.
    Asset pipeline (2026-07-20, v2 SIMPLIFIED): user locked a ONE-IMAGE
    model — one image per distinct thing; animation = code transforms (like
    the walk squish), quantity = stacked draws, state = composed layers
    (bonfire = woodpile + bouncing fire layer), variants = code
    flip/lean/tint. `assets/ASSET-CHECKLIST.txt` (v2, 26 required images;
-   cats P0 = DONE, no new cat art ever — sleep/collapsed/emotions/wiggle
-   all procedural). Detailed 146-name list archived as
-   `ASSET-CHECKLIST-DETAILED.txt`; BATCH-1/2/3-PROMPTS.txt CANCELLED
-   (banner added — cat art dropped). Anim spec §1.2 sprite hook dropped
-   accordingly (simplifies step 1). `assets/SPRITE-SPEC-REFERENCE.txt`
+   cats P0 = DONE, sleep/collapsed/emotions procedural; wiggle a/b frame
+   pairs are the ONE sanctioned hand-drawn exception (reinstated 2026-07-20b,
+   see M6 above — biscuit shipped, others plug-and-play). Detailed 146-name
+   list archived as `ASSET-CHECKLIST-DETAILED.txt`; BATCH-2/3-PROMPTS.txt
+   CANCELLED, BATCH-1 (wiggle) PARTIALLY REINSTATED. Anim spec §1.2 sprite
+   hook restored (Addendum A). `assets/SPRITE-SPEC-REFERENCE.txt`
    still canonical for style/canvas/naming (§11a layer registration added).
    `assets/BATCH-4-PROMPTS.txt`: P1 layer kit (fire/woodpile/tree/stump)
    via 5 prompts — fire+woodpile decomposed from one bonfire image, stump

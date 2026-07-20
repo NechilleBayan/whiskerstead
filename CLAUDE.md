@@ -31,3 +31,8 @@ compose layering, batch file format, checklist/PROJECT-STATE updates). Track
 assets in `assets/ASSET-CHECKLIST.txt`; style/canvas rules live in
 `assets/SPRITE-SPEC-REFERENCE.txt`. Cats are art-complete — never propose new
 cat sprites; all cat states are code transforms of the 10 shipped neutrals.
+The ONE exception (reinstated 2026-07-20b): `cat_<name>_wiggle_<a|b>.png` frame
+pairs. A complete pair auto-upgrades that cat's perform-phase wiggle; a missing
+pair falls back to the procedural tilt. Biscuit's pair is shipped; the other
+four cats' pairs are plug-and-play (drop files in `assets/cats/{2x,1x}/`, zero
+code). See `files/10-universal-action-anim-spec.md` Addendum A.
